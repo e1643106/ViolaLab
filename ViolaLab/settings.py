@@ -187,5 +187,5 @@ SESSION_COOKIE_AGE = 60 * 60 * 8
 # Pfad zur Benchmark-CSV (ENV mit Fallback)
 BUNDESLIGA_BENCH_CSV = os.environ.get(
     "BUNDESLIGA_BENCH_CSV",
-    str(BASE_DIR / "out_top6_allmetrics" / "top6_overall_mean_last5_all_metrics_first22.csv"),
+    str(BASE_DIR / "data" / "top6_overall_mean_last5_all_metrics_first22.csv"),
 )

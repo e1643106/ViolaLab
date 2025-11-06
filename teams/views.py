@@ -23,6 +23,7 @@ Wichtige Endpunkte:
 # ------ Standardbibs ---------------------------------------------------------------
 import json
 import os, csv
+from pathlib import Path
 from datetime import datetime
 from math import floor, ceil
 
@@ -122,7 +123,7 @@ def _load_bundesliga_benchmark() -> dict[str, float] | None:
     default_path = (
         getattr(settings, "BUNDESLIGA_BENCH_CSV", None)
         or os.environ.get("BUNDESLIGA_BENCH_CSV")
-        or "/Users/salih/Fussball/Codes/Viola_Lab/data/top6_overall_mean_last5_all_metrics_first22.csv"
+        or str(Path(settings.BASE_DIR) / "data" / "top6_overall_mean_last5_all_metrics_first22.csv")
     )
     # falls Pfad ungültig
     if not default_path or not os.path.exists(default_path):
