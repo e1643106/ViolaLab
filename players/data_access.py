@@ -1,34 +1,24 @@
 """Raw SQL helpers for the players dashboard."""
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import date
 from typing import Sequence
-
 from django.db import connection
-
-
 @dataclass(slots=True)
 class CompetitionRecord:
     key: str
     label: str
     competition_id: int
     season_id: int
-
-
 @dataclass(slots=True)
 class SeasonRow:
     player_id: int
     player_name: str
     metrics: dict[str, float | None]
-
     def __getattr__(self, item: str):  # pragma: no cover - convenience for templates
         if item in self.metrics:
             return self.metrics[item]
         raise AttributeError(item)
-
-
 @dataclass(slots=True)
 class MatchRow:
     match_id: int
@@ -36,13 +26,10 @@ class MatchRow:
     player_id: int
     player_name: str
     metrics: dict[str, float | None]
-
     def __getattr__(self, item: str):  # pragma: no cover - convenience for templates
         if item in self.metrics:
             return self.metrics[item]
         raise AttributeError(item)
-
-
 def fetch_competitions() -> list[CompetitionRecord]:
     rows = _fetch_dicts(
         """
@@ -58,7 +45,6 @@ def fetch_competitions() -> list[CompetitionRecord]:
         ORDER BY psd.competition_id, psd.season_id
         """,
     )
-
     competitions: list[CompetitionRecord] = []
     for row in rows:
         competition_id = int(row["competition_id"])
@@ -80,12 +66,9 @@ def fetch_competitions() -> list[CompetitionRecord]:
             )
         )
     return competitions
-
-
 def fetch_teams(competition_id: int | None, season_id: int | None) -> list[dict[str, object]]:
     if competition_id is None or season_id is None:
         return []
-
     return _fetch_dicts(
         """
         SELECT DISTINCT
@@ -99,8 +82,6 @@ def fetch_teams(competition_id: int | None, season_id: int | None) -> list[dict[
         """,
         [competition_id, season_id],
     )
-
-
 def fetch_players(
     competition_id: int | None,
     season_id: int | None,
@@ -108,7 +89,6 @@ def fetch_players(
 ) -> list[dict[str, object]]:
     if competition_id is None or season_id is None or team_id is None:
         return []
-
     rows = _fetch_dicts(
         """
         SELECT DISTINCT
@@ -124,10 +104,7 @@ def fetch_players(
         """,
         [competition_id, season_id, int(team_id)],
     )
-
     return rows
-
-
 def fetch_season_rows(
     competition_id: int,
     season_id: int,
@@ -137,7 +114,6 @@ def fetch_season_rows(
 ) -> list[SeasonRow]:
     placeholders = ", ".join(["%s"] * len(player_ids))
     metric_sql = ",\n            ".join(f"psd.{metric} AS {metric}" for metric in metrics)
-
     rows = _fetch_dicts(
         f"""
         SELECT
@@ -155,7 +131,6 @@ def fetch_season_rows(
         """,
         [competition_id, season_id, team_id, *player_ids],
     )
-
     results: list[SeasonRow] = []
     for row in rows:
         metrics_map = {metric: row.get(metric) for metric in metrics}
@@ -167,8 +142,6 @@ def fetch_season_rows(
             )
         )
     return results
-
-
 def fetch_match_rows(
     competition_id: int,
     season_id: int,
@@ -178,7 +151,6 @@ def fetch_match_rows(
 ) -> list[MatchRow]:
     placeholders = ", ".join(["%s"] * len(player_ids))
     metric_sql = ",\n            ".join(f"pmd.{metric} AS {metric}" for metric in metrics)
-
     rows = _fetch_dicts(
         f"""
         SELECT
@@ -200,7 +172,6 @@ def fetch_match_rows(
         """,
         [competition_id, season_id, team_id, *player_ids],
     )
-
     results: list[MatchRow] = []
     for row in rows:
         metrics_map = {metric: row.get(metric) for metric in metrics}
@@ -214,11 +185,8 @@ def fetch_match_rows(
             )
         )
     return results
-
-
 def _fetch_dicts(sql: str, params: Sequence[object] | None = None) -> list[dict[str, object]]:
     """Execute *sql* and return dicts with lowercase keys."""
-
     with connection.cursor() as cursor:
         cursor.execute(sql, params or [])
         columns = [column[0].lower() for column in cursor.description]

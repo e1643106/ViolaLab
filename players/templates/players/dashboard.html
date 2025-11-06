@@ -1,29 +1,23 @@
 {% extends "base.html" %}
-
 {% block title %}Players – ViolaLab{% endblock %}
-
 {% block extra_css %}
   <style>
     .filter-grid {
       display: grid;
       gap: 1rem;
     }
-
     @media (min-width: 768px) {
       .filter-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
-
     .chart-card + .chart-card {
       margin-top: 1.5rem;
     }
   </style>
 {% endblock %}
-
 {% block content %}
   <h1 class="mb-4">Players</h1>
-
   <form method="get" class="card mb-4">
     <div class="card-header">Auswahl</div>
     <div class="card-body filter-grid">
@@ -37,7 +31,6 @@
           {% endfor %}
         </select>
       </div>
-
       <div>
         <label class="form-label" for="id_team">Team</label>
         <select id="id_team" class="form-select" name="team">
@@ -48,7 +41,6 @@
           {% endfor %}
         </select>
       </div>
-
       <div>
         <label class="form-label" for="id_player_search">Spieler vergleichen</label>
         <input
@@ -72,7 +64,6 @@
       <button class="btn btn-primary" type="submit">Aktualisieren</button>
     </div>
   </form>
-
   {% if not competition_choices %}
     <div class="alert alert-warning">Keine Daten vorhanden.</div>
   {% else %}
@@ -94,19 +85,7 @@
             <tbody>
               {% for stat in season_stats %}
                 <tr>
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-                  <th scope="row">{{ stat.player.player_name }}</th>
-=======
                   <th scope="row">{{ stat.player_name }}</th>
->>>>>>> theirs
-=======
-                  <th scope="row">{{ stat.player_name }}</th>
->>>>>>> theirs
-=======
-                  <th scope="row">{{ stat.player_name }}</th>
->>>>>>> theirs
                   {% for metric, label, fmt in season_metrics %}
                     {% with value=getattr(stat, metric) %}
                       <td class="text-end">
@@ -128,14 +107,12 @@
           </table>
         </div>
       </div>
-
       <div class="card chart-card">
         <div class="card-header">Season Vergleich (Chart)</div>
         <div class="card-body">
           <canvas id="season-chart" height="160"></canvas>
         </div>
       </div>
-
       <div class="chart-card">
         <h2 class="h5">Match-Performance</h2>
         {% for metric, label in match_metrics %}
@@ -150,7 +127,6 @@
     {% endif %}
   {% endif %}
 {% endblock %}
-
 {% block extra_js %}
   {{ block.super }}
   <script>
@@ -167,7 +143,6 @@
         });
       }
     })();
-
     const seasonChartData = JSON.parse('{{ season_chart_json|escapejs }}');
     if (seasonChartData.labels && seasonChartData.labels.length) {
       const metricFormats = seasonChartData.formats || [];
@@ -213,7 +188,6 @@
         });
       }
     }
-
     const matchChartData = JSON.parse('{{ match_chart_json|escapejs }}');
     if (matchChartData.labels && matchChartData.labels.length) {
       {% for metric, label in match_metrics %}

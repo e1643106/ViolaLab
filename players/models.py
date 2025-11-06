@@ -1,16 +1,9 @@
-"""Players app models and compatibility exports."""
-
 from django.db import models
 
-<<<<<<< ours
-=======
+
 from .data_access import MatchRow, SeasonRow
-
->>>>>>> theirs
-
 class Player(models.Model):
     """Abbild der bestehenden ``players``-Tabelle."""
-
     player_id = models.IntegerField(primary_key=True)
     birth_date = models.DateField(blank=True, null=True)
     player_name = models.CharField(max_length=255, blank=True, null=True)
@@ -19,18 +12,12 @@ class Player(models.Model):
     created_at_utc = models.DateTimeField(blank=True, null=True)
     updated_at_utc = models.DateTimeField(blank=True, null=True)
     player_female = models.BooleanField(blank=True, null=True)
-
     class Meta:
         managed = False
         db_table = "players"
         ordering = ("player_name",)
-
     def __str__(self) -> str:  # pragma: no cover - reine Convenience
         return self.player_name or f"Player {self.player_id}"
-<<<<<<< ours
-=======
-
-
 # ----------------------------------------------------------------------------
 # Compatibility aliases
 # ----------------------------------------------------------------------------
@@ -45,9 +32,6 @@ class Player(models.Model):
 # breaking (e.g. ``from players.models import PlayerMatchStat``) we re-export
 # those dataclasses here under the legacy names.  This keeps backwards
 # compatibility without reintroducing the faulty ORM models.
-
 PlayerSeasonStat = SeasonRow
 PlayerMatchStat = MatchRow
-
 __all__ = ["Player", "PlayerSeasonStat", "PlayerMatchStat"]
->>>>>>> theirs
