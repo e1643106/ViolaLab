@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-<<<<<<< ours
 from typing import Iterable
 
 from django.contrib.auth.decorators import login_required
@@ -15,16 +14,6 @@ from teams.models import Competition
 
 from .models import PlayerMatchStat, PlayerSeasonStat
 
-=======
-from datetime import date
-from typing import Iterable, Sequence
-
-from django.contrib.auth.decorators import login_required
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db import connection
-from django.shortcuts import render
-
->>>>>>> theirs
 
 @dataclass(slots=True)
 class CompetitionChoice:
@@ -34,42 +23,6 @@ class CompetitionChoice:
     season_id: int
 
 
-<<<<<<< ours
-=======
-@dataclass(slots=True)
-class SeasonStatRow:
-    player_id: int
-    player_name: str
-    metrics: dict[str, float | None]
-
-    def __getattr__(self, item: str):
-        if item in self.metrics:
-            return self.metrics[item]
-        raise AttributeError(item)
-
-
-@dataclass(slots=True)
-class MatchStatRow:
-    match_id: int
-    match_date: date | None
-    player_id: int
-    player_name: str
-    metrics: dict[str, float | None]
-
-    def __getattr__(self, item: str):
-        if item in self.metrics:
-            return self.metrics[item]
-        raise AttributeError(item)
-
-
-def _fetch_dicts(sql: str, params: Sequence[object] | None = None) -> list[dict[str, object]]:
-    with connection.cursor() as cursor:
-        cursor.execute(sql, params or [])
-        columns = [col[0].lower() for col in cursor.description]
-        return [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-
->>>>>>> theirs
 SEASON_METRICS: list[tuple[str, str, str]] = [
     ("npg_90", "NP Goals / 90", "number"),
     ("npxgxa_90", "NP xG+xA / 90", "number"),
@@ -149,7 +102,6 @@ def dashboard(request):
 
 def _load_competition_choices() -> list[CompetitionChoice]:
     pairs = list(
-<<<<<<< ours
         PlayerSeasonStat.objects.values_list("competition_id", "season_id").distinct()
     )
     if not pairs:
@@ -173,33 +125,6 @@ def _load_competition_choices() -> list[CompetitionChoice]:
             if comp
             else f"Competition {comp_id} / Season {season_id}"
         )
-=======
-        """
-        SELECT DISTINCT
-            psd.competition_id AS competition_id,
-            psd.season_id AS season_id,
-            c.competition_name AS competition_name,
-            c.season_name AS season_name
-        FROM player_season_data AS psd
-        LEFT JOIN competitions AS c
-            ON c.competition_id = psd.competition_id
-           AND c.season_id = psd.season_id
-        ORDER BY psd.competition_id, psd.season_id
-        """
-    )
-    choices: list[CompetitionChoice] = []
-    for row in pairs:
-        comp_id = row["competition_id"]
-        season_id = row["season_id"]
-        comp_name = row.get("competition_name")
-        season_name = row.get("season_name")
-        if comp_name and season_name:
-            label = f"{comp_name} – {season_name}"
-        elif comp_name:
-            label = comp_name
-        else:
-            label = f"Competition {comp_id} / Season {season_id}"
->>>>>>> theirs
         choices.append(
             CompetitionChoice(
                 key=f"{comp_id}:{season_id}",
@@ -214,7 +139,6 @@ def _load_competition_choices() -> list[CompetitionChoice]:
 def _load_teams(competition_id: int | None, season_id: int | None):
     if competition_id is None or season_id is None:
         return []
-<<<<<<< ours
     qs = (
         PlayerSeasonStat.objects.filter(
             competition_id=competition_id,
@@ -225,22 +149,6 @@ def _load_teams(competition_id: int | None, season_id: int | None):
         .order_by("team_name")
     )
     return list(qs)
-=======
-    rows = _fetch_dicts(
-        """
-        SELECT DISTINCT
-            psd.team_id AS team_id,
-            psd.team_name AS team_name
-        FROM player_season_data AS psd
-        WHERE psd.competition_id = %s
-          AND psd.season_id = %s
-          AND psd.team_id IS NOT NULL
-        ORDER BY psd.team_name
-        """,
-        [competition_id, season_id],
-    )
-    return rows
->>>>>>> theirs
 
 
 def _load_players(
@@ -250,7 +158,6 @@ def _load_players(
 ):
     if competition_id is None or season_id is None or team_id is None:
         return []
-<<<<<<< ours
     qs = (
         PlayerSeasonStat.objects.filter(
             competition_id=competition_id,
@@ -263,35 +170,13 @@ def _load_players(
             "player__player_name",
         )
         .order_by("player__player_name")
-=======
-    rows = _fetch_dicts(
-        """
-        SELECT DISTINCT
-            psd.player_id AS player_id,
-            pl.player_name AS player_name
-        FROM player_season_data AS psd
-        LEFT JOIN players AS pl
-            ON pl.player_id = psd.player_id
-        WHERE psd.competition_id = %s
-          AND psd.season_id = %s
-          AND psd.team_id = %s
-        ORDER BY COALESCE(pl.player_name, ''), psd.player_id
-        """,
-        [competition_id, season_id, int(team_id)],
->>>>>>> theirs
     )
     return [
         {
             "player_id": row["player_id"],
-<<<<<<< ours
             "player_name": row["player__player_name"] or f"Player {row['player_id']}",
         }
         for row in qs
-=======
-            "player_name": row["player_name"] or f"Player {row['player_id']}",
-        }
-        for row in rows
->>>>>>> theirs
     ]
 
 
@@ -301,7 +186,6 @@ def _load_season_stats(
     team_id: str | None,
     player_ids: Iterable[int],
 ):
-<<<<<<< ours
     if competition_id is None or season_id is None or team_id is None or not player_ids:
         return []
     qs = (
@@ -315,50 +199,6 @@ def _load_season_stats(
         .order_by("player__player_name")
     )
     return list(qs)
-=======
-    if (
-        competition_id is None
-        or season_id is None
-        or team_id is None
-        or not player_ids
-    ):
-        return []
-    metric_columns = ",\n            ".join(
-        f"psd.{metric} AS {metric}" for metric, _, _ in SEASON_METRICS
-    )
-    placeholders = ", ".join(["%s"] * len(player_ids))
-    query = f"""
-        SELECT
-            psd.player_id AS player_id,
-            pl.player_name AS player_name,
-            {metric_columns}
-        FROM player_season_data AS psd
-        LEFT JOIN players AS pl
-            ON pl.player_id = psd.player_id
-        WHERE psd.competition_id = %s
-          AND psd.season_id = %s
-          AND psd.team_id = %s
-          AND psd.player_id IN ({placeholders})
-        ORDER BY COALESCE(pl.player_name, ''), psd.player_id
-        """
-    rows = _fetch_dicts(
-        query,
-        [competition_id, season_id, int(team_id), *player_ids],
-    )
-    stats: list[SeasonStatRow] = []
-    for row in rows:
-        player_id = row.pop("player_id")
-        player_name = row.pop("player_name") or f"Player {player_id}"
-        metrics = {metric: row.get(metric) for metric, _, _ in SEASON_METRICS}
-        stats.append(
-            SeasonStatRow(
-                player_id=player_id,
-                player_name=player_name,
-                metrics=metrics,
-            )
-        )
-    return stats
->>>>>>> theirs
 
 
 def _load_match_stats(
@@ -367,7 +207,6 @@ def _load_match_stats(
     team_id: str | None,
     player_ids: Iterable[int],
 ):
-<<<<<<< ours
     if competition_id is None or season_id is None or team_id is None or not player_ids:
         return []
     filters = Q(player_id__in=list(player_ids)) & Q(team_id=int(team_id))
@@ -384,72 +223,13 @@ def _load_match_stats(
 
 
 def _build_season_chart_payload(season_stats: list[PlayerSeasonStat]):
-=======
-    if (
-        competition_id is None
-        or season_id is None
-        or team_id is None
-        or not player_ids
-    ):
-        return []
-    metric_columns = ",\n            ".join(
-        f"pmd.{metric} AS {metric}" for metric, _ in MATCH_METRICS
-    )
-    placeholders = ", ".join(["%s"] * len(player_ids))
-    query = f"""
-        SELECT
-            pmd.match_id AS match_id,
-            COALESCE(m.match_date, pmd.match_date) AS match_date,
-            pmd.player_id AS player_id,
-            pl.player_name AS player_name,
-            {metric_columns}
-        FROM player_match_data AS pmd
-        LEFT JOIN matches AS m
-            ON m.match_id = pmd.match_id
-        LEFT JOIN players AS pl
-            ON pl.player_id = pmd.player_id
-        WHERE m.competition_id = %s
-          AND m.season_id = %s
-          AND pmd.team_id = %s
-          AND pmd.player_id IN ({placeholders})
-        ORDER BY match_date, pmd.match_id, pmd.player_id
-        """
-    rows = _fetch_dicts(
-        query,
-        [competition_id, season_id, int(team_id), *player_ids],
-    )
-    stats: list[MatchStatRow] = []
-    for row in rows:
-        player_id = row.pop("player_id")
-        player_name = row.pop("player_name") or f"Player {player_id}"
-        match_id = row.pop("match_id")
-        match_date_value = row.pop("match_date")
-        metrics = {metric: row.get(metric) for metric, _ in MATCH_METRICS}
-        stats.append(
-            MatchStatRow(
-                match_id=match_id,
-                match_date=match_date_value,
-                player_id=player_id,
-                player_name=player_name,
-                metrics=metrics,
-            )
-        )
-    return stats
-
-
-def _build_season_chart_payload(season_stats: Sequence[SeasonStatRow]):
->>>>>>> theirs
     labels = [label for _, label, _ in SEASON_METRICS]
     formats = [fmt for _, _, fmt in SEASON_METRICS]
     datasets = []
     for stat in season_stats:
         datasets.append(
             {
-<<<<<<< ours
                 "label": stat.player.player_name or f"Player {stat.player_id}",
-=======
-                "label": stat.player_name or f"Player {stat.player_id}",
->>>>>>> theirs
                 "data": [
                     _chart_value(getattr(stat, metric))
                     for metric, _, _ in SEASON_METRICS
@@ -459,7 +239,6 @@ def _build_season_chart_payload(season_stats: Sequence[SeasonStatRow]):
     return {"labels": labels, "datasets": datasets, "formats": formats}
 
 
-<<<<<<< ours
 def _build_match_chart_payload(match_stats: list[PlayerMatchStat]):
     if not match_stats:
         return {"labels": [], "metrics": {}, "players": []}
@@ -471,13 +250,6 @@ def _build_match_chart_payload(match_stats: list[PlayerMatchStat]):
             if (stat.match and stat.match.match_date) or stat.match_date
         }
     )
-=======
-def _build_match_chart_payload(match_stats: Sequence[MatchStatRow]):
-    if not match_stats:
-        return {"labels": [], "metrics": {}, "players": []}
-
-    dates = sorted({stat.match_date for stat in match_stats if stat.match_date})
->>>>>>> theirs
     labels = [date.strftime("%Y-%m-%d") for date in dates]
 
     metric_values: dict[str, dict[int, dict[str, float | None]]] = {
@@ -486,17 +258,10 @@ def _build_match_chart_payload(match_stats: Sequence[MatchStatRow]):
     player_names: dict[int, str] = {}
 
     for stat in match_stats:
-<<<<<<< ours
         date = stat.match.match_date if stat.match and stat.match.match_date else stat.match_date
         if date not in dates:
             continue
         player_names[stat.player_id] = stat.player.player_name or f"Player {stat.player_id}"
-=======
-        date = stat.match_date
-        if not date or date not in dates:
-            continue
-        player_names[stat.player_id] = stat.player_name or f"Player {stat.player_id}"
->>>>>>> theirs
         for metric, _ in MATCH_METRICS:
             metric_values[metric][stat.player_id][date.strftime("%Y-%m-%d")] = _chart_value(
                 getattr(stat, metric)
