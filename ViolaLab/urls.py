@@ -44,6 +44,10 @@ urlpatterns = [
             path("teams/", include(("teams.urls", "teams"), namespace="teams")),
 
 
+            # App „players“ unter /players/
+            path("players/", include(("players.urls", "players"), namespace="players")),
+
+
             # Auth: Login/Logout
             path(
             "accounts/login/",

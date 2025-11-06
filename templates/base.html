@@ -78,6 +78,13 @@
                   data-bs-dismiss="offcanvas"
                 >Teams</a>
               </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link {% if request.resolver_match and request.resolver_match.namespace == 'players' %}active{% endif %}"
+                  href="{% url 'players:dashboard' %}"
+                  data-bs-dismiss="offcanvas"
+                >Players</a>
+              </li>
               {% if request.user.is_authenticated %}
                 <li class="nav-item">
                   <a
@@ -111,6 +118,12 @@
                 class="nav-link {% if request.resolver_match and request.resolver_match.namespace == 'teams' %}active{% endif %}"
                 href="{% url 'teams:dashboard' %}"
               >Teams</a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link {% if request.resolver_match and request.resolver_match.namespace == 'players' %}active{% endif %}"
+                href="{% url 'players:dashboard' %}"
+              >Players</a>
             </li>
             {% if request.user.is_authenticated %}
               <li class="nav-item">

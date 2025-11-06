@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Players – ViolaLab{% endblock %}
+
+{% block extra_css %}
+  <style>
+    .filter-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .filter-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .chart-card + .chart-card {
+      margin-top: 1.5rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <h1 class="mb-4">Players</h1>
+
+  <form method="get" class="card mb-4">
+    <div class="card-header">Auswahl</div>
+    <div class="card-body filter-grid">
+      <div>
+        <label class="form-label" for="id_competition">Liga / Saison</label>
+        <select id="id_competition" class="form-select" name="competition">
+          {% for comp in competition_choices %}
+            <option value="{{ comp.key }}" {% if comp.key == selected_competition %}selected{% endif %}>
+              {{ comp.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="id_team">Team</label>
+        <select id="id_team" class="form-select" name="team">
+          {% for team in teams %}
+            <option value="{{ team.team_id }}" {% if team.team_id|stringformat:"s" == selected_team %}selected{% endif %}>
+              {{ team.team_name|default:"Team" }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label" for="id_player_search">Spieler vergleichen</label>
+        <input
+          type="search"
+          id="id_player_search"
+          class="form-control mb-2"
+          placeholder="Spieler filtern..."
+          autocomplete="off"
+        />
+        <select id="id_players" class="form-select" name="players" multiple size="8">
+          {% for player in players %}
+            <option value="{{ player.player_id }}" {% if player.player_id|stringformat:"s" in selected_players %}selected{% endif %}>
+              {{ player.player_name }}
+            </option>
+          {% endfor %}
+        </select>
+        <small class="text-muted">Mehrfachauswahl mit Strg/Cmd möglich.</small>
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button class="btn btn-primary" type="submit">Aktualisieren</button>
+    </div>
+  </form>
+
+  {% if not competition_choices %}
+    <div class="alert alert-warning">Keine Daten vorhanden.</div>
+  {% else %}
+    {% if not season_stats %}
+      <div class="alert alert-info">Bitte ein Team und mindestens einen Spieler auswählen.</div>
+    {% else %}
+      <div class="card mb-4">
+        <div class="card-header">Season Snapshot</div>
+        <div class="card-body table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Spieler</th>
+                {% for metric, label, fmt in season_metrics %}
+                  <th class="text-end">{{ label }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for stat in season_stats %}
+                <tr>
+<<<<<<< ours
+                  <th scope="row">{{ stat.player.player_name }}</th>
+=======
+                  <th scope="row">{{ stat.player_name }}</th>
+>>>>>>> theirs
+                  {% for metric, label, fmt in season_metrics %}
+                    {% with value=getattr(stat, metric) %}
+                      <td class="text-end">
+                        {% if value is not None %}
+                          {% if fmt == "percent" %}
+                            {{ value|floatformat:2 }}
+                          {% else %}
+                            {{ value|floatformat:2 }}
+                          {% endif %}
+                        {% else %}
+                          –
+                        {% endif %}
+                      </td>
+                    {% endwith %}
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-header">Season Vergleich (Chart)</div>
+        <div class="card-body">
+          <canvas id="season-chart" height="160"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h2 class="h5">Match-Performance</h2>
+        {% for metric, label in match_metrics %}
+          <div class="card mb-3">
+            <div class="card-header">{{ label }}</div>
+            <div class="card-body">
+              <canvas id="match-chart-{{ metric }}" height="160"></canvas>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script>
+    (function() {
+      const searchInput = document.getElementById('id_player_search');
+      const select = document.getElementById('id_players');
+      if (searchInput && select) {
+        searchInput.addEventListener('input', () => {
+          const term = searchInput.value.trim().toLowerCase();
+          [...select.options].forEach(option => {
+            const match = option.text.toLowerCase().includes(term);
+            option.hidden = !match;
+          });
+        });
+      }
+    })();
+
+    const seasonChartData = JSON.parse('{{ season_chart_json|escapejs }}');
+    if (seasonChartData.labels && seasonChartData.labels.length) {
+      const metricFormats = seasonChartData.formats || [];
+      const ctx = document.getElementById('season-chart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: seasonChartData.labels,
+            datasets: seasonChartData.datasets.map((dataset, idx) => ({
+              label: dataset.label,
+              data: dataset.data,
+              backgroundColor: `hsla(${(idx * 70) % 360}, 70%, 55%, 0.6)`,
+              borderColor: `hsla(${(idx * 70) % 360}, 70%, 35%, 1)`,
+              borderWidth: 1,
+            })),
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const format = metricFormats[context.dataIndex];
+                    const val = context.parsed.y;
+                    if (val == null) {
+                      return `${context.dataset.label}: –`;
+                    }
+                    if (format === 'percent') {
+                      return `${context.dataset.label}: ${(val * 100).toFixed(1)}%`;
+                    }
+                    return `${context.dataset.label}: ${val.toFixed(2)}`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    const matchChartData = JSON.parse('{{ match_chart_json|escapejs }}');
+    if (matchChartData.labels && matchChartData.labels.length) {
+      {% for metric, label in match_metrics %}
+        (function() {
+          const canvas = document.getElementById('match-chart-{{ metric }}');
+          if (!canvas) {
+            return;
+          }
+          const payload = matchChartData.metrics['{{ metric }}'];
+          if (!payload) {
+            return;
+          }
+          new Chart(canvas, {
+            type: 'line',
+            data: {
+              labels: matchChartData.labels,
+              datasets: payload.datasets.map((dataset, idx) => ({
+                label: dataset.label,
+                data: dataset.data,
+                tension: 0.3,
+                spanGaps: true,
+                borderWidth: 2,
+                borderColor: `hsla(${(idx * 70) % 360}, 65%, 45%, 1)`,
+                backgroundColor: `hsla(${(idx * 70) % 360}, 65%, 45%, 0.15)`,
+                pointRadius: 3,
+              })),
+            },
+            options: {
+              responsive: true,
+              interaction: {
+                mode: 'index',
+                intersect: false,
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      if (context.parsed.y == null) {
+                        return `${context.dataset.label}: –`;
+                      }
+                      return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                }
+              }
+            }
+          });
+        })();
+      {% endfor %}
+    }
+  </script>
+{% endblock %}
