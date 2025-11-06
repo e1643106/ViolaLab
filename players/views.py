@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+<<<<<<< ours
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -21,6 +22,23 @@ class CompetitionChoice:
     label: str
     competition_id: int
     season_id: int
+=======
+from typing import Iterable, Sequence
+
+from django.contrib.auth.decorators import login_required
+from django.core.serializers.json import DjangoJSONEncoder
+from django.shortcuts import render
+
+from .data_access import (
+    MatchRow,
+    SeasonRow,
+    fetch_competitions,
+    fetch_match_rows,
+    fetch_players,
+    fetch_season_rows,
+    fetch_teams,
+)
+>>>>>>> theirs
 
 
 SEASON_METRICS: list[tuple[str, str, str]] = [

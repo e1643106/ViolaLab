@@ -1,5 +1,12 @@
+"""Players app models and compatibility exports."""
+
 from django.db import models
 
+<<<<<<< ours
+=======
+from .data_access import MatchRow, SeasonRow
+
+>>>>>>> theirs
 
 class Player(models.Model):
     """Abbild der bestehenden ``players``-Tabelle."""
@@ -20,3 +27,27 @@ class Player(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - reine Convenience
         return self.player_name or f"Player {self.player_id}"
+<<<<<<< ours
+=======
+
+
+# ----------------------------------------------------------------------------
+# Compatibility aliases
+# ----------------------------------------------------------------------------
+#
+# Earlier iterations of the players app exposed unmanaged Django models named
+# ``PlayerSeasonStat`` and ``PlayerMatchStat``.  These relied on implicit
+# ``id`` columns that do not exist in the underlying SQL Server views/tables
+# and therefore triggered ``Invalid column name 'id'`` errors once queried.
+#
+# The refactored dashboard now consumes lightweight dataclass rows defined in
+# ``players.data_access`` instead.  To keep imports from older code paths from
+# breaking (e.g. ``from players.models import PlayerMatchStat``) we re-export
+# those dataclasses here under the legacy names.  This keeps backwards
+# compatibility without reintroducing the faulty ORM models.
+
+PlayerSeasonStat = SeasonRow
+PlayerMatchStat = MatchRow
+
+__all__ = ["Player", "PlayerSeasonStat", "PlayerMatchStat"]
+>>>>>>> theirs
