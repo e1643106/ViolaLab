@@ -1,0 +1,186 @@
+Framework: Django ( Server - Rendering + JSON API)
+
+Apps:
+    teams: Dashboard ( Views, Templates, Services, JS)
+    core: Navigator/Startseite
+
+Frontend: JS (ES-Module), Chart.js ( mit Annotation Plugin) für Charts, D3 für Donut
+
+Daten: TeamEventData ( Django Model) , und eine CSV für AUT Bundesliga Benchmark
+
+Auth: Django Login/Logout, geschütze Views vie @login_required
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+
+REQUEST FLOW:
+
+1. URL: GET /teams/
+
+2. Router:
+    ViolaLab/urls.py -> path("teams/", include("teams.urls", namespace="teams"))
+    teams/urls.py -> path("", views.league_dashboard, name="dashboard")
+
+3. View: teams/views.py -> league_dashboard()
+    ruft _compute_playload(request.GET) auf
+    rendert teams/templates/teams/dashboard.html
+    übergibt initale Chart-Date und Meta an das Frontend über:
+            window.DASHBOARD_BOOTSTRAP = {
+                initialData, initalMeta, endpoint, selectedTeam
+            }
+
+4. Template dashboard.html bindet "Teil" Templates:
+    _filters.html       (Liga/Team/Kategorie)
+    _macthday.html      (Matchday-Karte (Spieltagsübersicht))
+    _charts_and_metrics.html (Chart und Metrikliste)
+    lädt static/js/dashboard/main.js 
+
+(AJAX/JSON)
+5. Frontend (in static.js/dashboard/main.js)
+    liest Bootstrao Objekt
+    initialisiert Chart ( falls Daten vorhanden )
+    verdrahtet UI Events ( Liga/Team/Kategorien/Metriken/Matchday )
+    löst AJAX Aufrufe über fetchAndUpdate() aus api.js
+
+6. URL: Get /teams/data/?... (Query Patamaeter)
+    teams/urls.py -> path("data/", views.league_dashboard_data, name="dashboard_data")
+    View: league_dashboard_data() -> gibt JSON Playload zurücl
+
+7. Frontend:
+    api.js aktualisiert DOM  (Titel, Legende, Fehlermeldungen, Teamauswahl)
+    chart.js rendert/aktualisiert Chart (Bar/Lollipop, Annotationen)
+    matchday.js zeigt Matchday-Header + Tiles (D3-Donut, Mini-Bars)
+
+
+------------------------------------------------------------------------------------------------------------
+
+
+ZENTRALE BERECHUNGEN: _compute_payload(params) (Backend)
+
+Ort: teams/views.py
+
+Filter: league, team (oder Alle), categories[], metric, optional md (Match-ID für Matchday).
+
+Datenzugriff: Query auf TeamEventData mit Aggregationen (Avg), optional Zeitreihe für ein Team.
+
+Resultat:
+Chart-Daten: Labels + Dataset (Bar), inkl. per-metric Statistik (league_mean, team_mean, quantiles)
+Scale-Hints: sinnvolle min/max/suggestedMin/suggestedMax
+Matchday-Block (wenn Kategorie Spieltag_Übersicht & team != Alle): Fixture-Infos + Tiles (Donut/Mini-Bars)
+Benchmark (nur Liga „Bundesliga“): CSV-Referenzwert, wenn vorhanden
+Wichtig: Wettbewerbsnamen werden robust normalisiert (Apostrophe/Whitespace) -> _comp_label()
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+
+FRONTEND MODULE (wie sie zusammenspielen)
+
+main.js
+    Entry-Point: liest Bootstrap, setzt Event-Handler, ruft fetchAndUpdate(), synchronisiert Hinweiszeile.
+
+api.js
+    Baut Query-String aus dem Filter-Formular, ruft /teams/data/, verteilt die Payload:
+        Teamauswahl neu aufbauen
+        Matchday-UI (Header + Tiles) befüllen
+        Chart-Titel/Legende setzen
+        Chart zeichnen/aktualisieren (createChart / updateChart)
+        Toggles (Benchmark/Lollipop) via syncToggles
+
+charts.js
+    Zeichnet Bar-Chart oder Lollipop-Chart (Scatter + dünne Bars).
+    Zeigt Annotationen: Liga-Ø, Team-Ø, IQR (25–75 %), p10/p90, optional Benchmark.
+    Der Benchmark-Schalter wird sichtbar, wenn Liga=Bundesliga oder CSV-Wert vorhanden.
+
+matchday.js
+    Sichtbarkeit der Matchday-Karte, D3-Donut (z. B. Ballbesitz), Mini-Bars via Chart.js, Header (Datum, Heim/Auswärts, Gegner, Ergebnis, xG) und Spieltags-Dropdown
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+ENDPUNKT UND QUERY PARAMETER
+
+HTML: GET /teams/ ->Dashboard
+
+JSON: GET /teams/data/?…
+    league=<Liga-Name>
+    team=<Team-Name>|Alle
+    categories=... (mehrfach, inkl. optional Spieltag_Übersicht)
+    metric=<spaltenname> (aus COLUMN_LABELS)
+    md=<match_id> (nur für Matchday-Navigation)
+
+Antwort (Beispiele):
+    chart_data: { labels: [...], datasets: [{ type: "bar", data: [...] }] }
+    chart_meta: { league_mean, team_mean, scale_hints, metric_format, quantiles, bench }
+    matchday: { matchdays: [{id,label}], selected_match_id, fixture, tiles }
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+
+
+TEMPLATES UND STATIC
+
+Templates
+    teams/templates/teams/dashboard.html – Seite, inkludiert _filters.html, _matchday.html, _charts_and_metrics.html
+    teams/templates/teams/table.html – einfache Datentabelle (Dev/Debug)
+    templates/base.html – bindet Vendor-Skripte (Chart.js, Annotation-Plugin, D3) + CSS
+    templates/auth/login.html – Login
+    templates/core/navigator.html – Startseite
+
+Static
+    CSS: static/css/dashboard.css, theme.css
+    JS: static/js/dashboard/{main,api,charts,matchday}.js (ES-Module, type="module")
+    Bilder/Fonts unter static/img, static/fonts
+
+Wichtig: Chart.js, chartjs-plugin-annotation und D3 müssen in base.html global geladen sein (machen die Module so).
+
+
+------------------------------------------------------------------------------------------------------------
+
+SERVICES BACKEND HELPER
+
+teams/services/benchmark.py
+load_bundesliga_benchmark() liest CSV im long oder wide Format; Ergebnis wird gecached (Modul-Cache). Pfad via:
+    settings.BUNDESLIGA_BENCH_CSV oder
+    Umgebungsvariable BUNDESLIGA_BENCH_CSV
+
+teams/services/stats.py
+    Format-Helper, Perzentile, Scale-Hints (optional nutzbar, Teile sind in der View gespiegelt).
+
+-----------------------------------------------------------------------------------------------------------
+
+
+AUTH UND ROUTING
+
+Login/Logout:
+    GET /accounts/login/ → LoginView (Template: auth/login.html)
+    GET /accounts/logout/ → LogoutView (leitet auf login)
+
+Schutz:
+    league_dashboard und league_dashboard_data sind mit @login_required geschützt.
+
+Startseite:
+    GET / → core.views.navigator
+
+Definitionen in ViolaLab/urls.py
+
+
+------------------------------------------------------------------------------------------------------------
+
+KONFIGURATION UND UMGEBUNGSVARIABLEN
+
+CSV-Benchmark:
+    settings.BUNDESLIGA_BENCH_CSV oder BUNDESLIGA_BENCH_CSV=/pfad/zur/datei.csv
+    CSV-Formate:
+        long: metric,value (oder key,value|mean|avg)
+        wide: Header = Metriken, Zeile 2 = Werte
+
+.env: liegt im Projekt (falls ihr python-dotenv/eigene Loader nutzt).
+Übliche Variablen: SECRET_KEY, DEBUG, ALLOWED_HOSTS, ggf. DB-Settings, o. g. CSV-Pfad.
+

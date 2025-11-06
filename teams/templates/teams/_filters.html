@@ -1,0 +1,125 @@
+<!--
+  Filterleiste des Dashboards.
+  Aufgaben:
+  - Liga- und Team-Auswahl
+  - Kategorien (Mehrfachauswahl), inkl. spezieller Behandlung für "Spieltag_Übersicht"
+  - "Anzeigen"-Button triggert ein JS-Update 
+
+
+  Wichtige IDs/Classes für JS:
+  - #filtersForm : Container-Form, an der Event-Listener hängen
+  - .filter-input : Klasse für alle Checkboxen (Kategorien)
+  - #categoriesWrap : Wrapper mit data-matchday-key="Spieltag_Übersicht" (JS erkennt Sonderkategorie)
+  - #applyBtn : Button, der das Laden neuer Daten auslöst (Fetch auf endpoint)
+  - #catHint : Live-Hinweisbereich (Accessibility: aria-live)
+-->
+
+
+
+
+
+
+<div class="card mb-3"> {# Bootstrap-Karte als visueller Containr #}
+  <div class="card-body">
+    <form id="filtersForm" class="row g-3 align-items-end" autocomplete="off">
+      <!--
+        - id="filtersForm": wird von main.js referenziert (Event-Handling)
+        - class="row g-3": Bootstrap Grid und "g-3" = Spaltenabstand 
+        - align-items-end: Labels und Felder auf eine Linie unten ausrichten
+        - autocomplete="off": mdacht das Browser-Autofill deaktiviert
+      -->
+
+
+
+      <div class="col-sm-6 col-md-4"> 
+        <label for="league" class="form-label">Liga</label>
+
+        <select id="league" name="league" class="form-select">
+          <!-- competitions_view ist eine Liste von (value, label)-Tupeln.
+            - value: echter DB/Originalname (z. B. "Bundesliga")
+            - label: harmonisierte/lesbare Bezeichnung (_comp_label)
+        -->
+          {% for value, label in competitions_view %}
+            <option value="{{ value }}" {% if value == selected %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+
+      </div>
+
+      <div class="col-sm-6 col-md-4">
+        <label for="team" class="form-label">Mannschaft</label>
+
+        <select id="team" name="team" class="form-select">
+          {# teams enthält am Anfang "Alle" und alle Teamnamen der ausgewählten Liga #}
+          {% for t in teams %}
+            <option value="{{ t }}" {% if t == selected_team %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+
+      </div>
+
+      <div class="col-12">
+        <label class="form-label d-block">Kategorien</label>
+        <div class="row" id="categoriesWrap" data-matchday-key="Spieltag_Übersicht">
+          <!--
+            - grouped_categories ist eine Liste: [(Gruppenname, [(key, label), ...]), ...]
+            - rendern pro Gruppe eine Spalte mit Checkboxen
+            - data-matchday-key = Schlüssel der Sonderkategorie
+        -->
+
+
+          {% for group_name, cat_keys in grouped_categories %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+              <strong class="text-muted" style="font-size:.9rem;">{{ group_name }}</strong>
+              <div class="ms-2 mt-1">
+                {% for key, label in cat_keys %}
+                  <div class="form-check small">
+                    <input
+                      class="form-check-input filter-input"
+                      type="checkbox"
+                      name="categories"
+                      value="{{ key }}"
+                      id="cat_{{ key }}"
+                      data-cat-key="{{ key }}"
+
+                      {# data-exclusive markiert die Sonderkategorie.
+                        - Aktuell wird "Spieltag_Übersicht" so gekennzeichnet
+                        - JS kann z.b. Hinweise einblenden oder Auswahlregeln anwenden.
+                        - Backend erlaubt Matchday + weitere Kategorien (nicht strikt exklusiv);
+                        die Frontend-Flag ist primär für UI-Verhalten/Hinweise gedacht.
+                        #}
+
+                        {% if key == "Spieltag_Übersicht" %}data-exclusive="true"{% endif %}
+                        {# Vorbelegung: bereits gewählte Kategorien sind angehakt #}
+
+
+                      {% if key == "Spieltag_Übersicht" %}data-exclusive="true"{% endif %}
+                      {% if selected_categories and key in selected_categories %}checked{% endif %}>
+                    <label class="form-check-label" for="cat_{{ key }}">{{ label }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Hinweiszeile: wird von JS dynamisch befüllt (z. B. wenn Matchday gewählt wurde) -->
+        <div id="catHint" class="form-text small text-muted" aria-live="polite"></div>
+        <!--
+          - aria-live="polite": Screenreader lesen Änderungen freundlich (nicht unterbrechend) vor.
+          - Verwendung: main.js setzt hier z.b. Hinweise wie "Matchday aktiv: ..."
+      -->
+      </div>
+
+      <div class="col-12">
+        <button type="button" id="applyBtn" class="btn btn-primary">Anzeigen</button>
+        <!--
+          - type="button": verhindertkForm-Submit damit kein Seitenreload passiert
+          - main.js hängt einen Click-Handler an #applyBtn und sammelt die Form-Werte,
+          baut eine Query (?league=...&team=...&categories=...&metric=...)
+          und ruft den JSON-Endpoint (window.DASHBOARD_BOOTSTRAP.endpoint) auf
+      -->
+      </div>
+    </form>
+  </div>
+</div>

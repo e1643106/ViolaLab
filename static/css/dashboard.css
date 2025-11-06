@@ -1,0 +1,59 @@
+:root{
+  --tile-height: 320px;
+  --tile-height-sm: 280px;
+  --donut-max: 280px;
+  --donut-max-sm: 240px;
+}
+
+.metrics-card .card-body { max-height: 420px; overflow: auto; }
+.metrics-card .form-check { margin-bottom: .25rem; }
+.muted { color: #6c757d; }
+
+/* Matchday-Layout */
+#matchdayTiles{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: .75rem;
+}
+#matchdayTiles .kpi-card{ display:flex; flex-direction:column; }
+#matchdayTiles .kpi-card .card-body{
+  display:flex; flex-direction:column; justify-content:flex-start; gap:.5rem;
+  height: var(--tile-height);
+}
+@media (max-width: 992px){
+  #matchdayTiles .kpi-card .card-body{ height: var(--tile-height-sm); }
+}
+
+/* Mini-Bars */
+.mini-canvas{ height: 150px; }
+
+/* Donut */
+.donut-box{
+  position:relative; flex:1; display:flex; align-items:center; justify-content:center;
+  width:100%; max-height: var(--donut-max);
+}
+@media (max-width: 992px){ .donut-box{ max-height: var(--donut-max-sm); } }
+.donut-box svg{ width:100%; height:100%; display:block; }
+
+/* Tooltip */
+.donut-tooltip{
+  position:absolute; pointer-events:none; background:#111827; color:#fff;
+  padding:6px 8px; border-radius:6px; font-size:12px; box-shadow:0 2px 8px rgba(0,0,0,.15);
+  opacity:0; transform: translate(12px,12px);
+}
+/* Matchday Layout */
+#matchdayTiles{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: .75rem;
+}
+.kpi-card .card-body{ display:flex; flex-direction:column; gap:.5rem; }
+.donut-box{ position:relative; display:flex; align-items:center; justify-content:center; width:100%; max-height:280px; }
+.donut-box svg{ width:100%; height:100%; display:block; }
+
+/* Tooltip */
+.donut-tooltip{
+  position:absolute; pointer-events:none; background:#111827; color:#fff;
+  padding:6px 8px; border-radius:6px; font-size:12px; box-shadow:0 2px 8px rgba(0,0,0,.15);
+  opacity:0; transform:translate(12px,12px);
+}

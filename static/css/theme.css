@@ -1,0 +1,344 @@
+/* ===  Webfonts einbinden === */
+@font-face{
+  font-family: "TradeGothicLTPro";
+  src: url("../fonts/TradeGothicLTPro/TradeGothicLTPro-Cn18.woff2") format("woff2");
+  font-weight: 400;   /* Regular */
+  font-style: normal;
+  font-display: swap;
+}
+@font-face{
+  font-family: "TradeGothicLTPro";
+  src: url("../fonts/TradeGothicLTPro/TradeGothicLTPro-BdCn20.woff2") format("woff2");
+  font-weight: 700;   /* Bold */
+  font-style: normal;
+  font-display: swap;
+}
+
+
+/* === Vereinsfarben & Bootstrap-Overrides === */
+/* ändern ! */
+:root{
+  --violet-600: #351f4a;   /* Hauptviolett */
+  --gold-500:   #CFA959;   /* Gold */
+  --text-900:   #1f2333;
+  --muted-200:  #E9ECEF;
+
+  --bs-primary: var(--violet-600);
+  --bs-link-color: var(--violet-600);
+}
+
+/* === Schrift & Grundlayout === */
+body{
+  font-family: "TradeGothicLTPro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text-900);
+}
+
+/* === Navbar & Logos === */
+.navbar{
+  background: var(--violet-600);
+  position: relative;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+}
+.navbar::before {
+  content:"";
+  display:block;
+  height:2px;              /* dünner weißer Streifen */
+  background:#fff;
+  position:absolute;
+  left:0; right:0;
+  bottom:0;                /* direkt am Rand der Navbar */
+}
+
+.navbar::after {
+  content:"";
+  display:block;
+  height:4px;              /* etwas breiterer roter Streifen */
+  background:red;
+  position:absolute;
+  left:0; right:0;
+  bottom:-4px;             /* direkt unter dem weißen */
+}
+
+.navbar-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); /* exakt mittig */
+}
+
+.austria-logo {
+  height: 50px; /* kleiner machen als ViolaLab */
+}
+
+
+.navbar-brand img[alt="FAK"] { height: 80px; }
+.navbar-brand img[alt="ViolaLab"] { height: 80px; }
+.navbar .nav-link{ color:#fff; opacity:.85; }
+.navbar .nav-link:hover{ color: var(--gold-500); opacity:1; }
+.navbar .nav-link.active{ color: var(--gold-500) !important; }
+
+/* === Karten & Header === */
+.card {
+  border-radius: 14px;
+}
+.card-header {
+  background: var(--violet-600);
+  color: #fff;
+  font-weight: 700;
+  position: relative;   /* wichtig, damit ::before/::after sich am Header orientieren */
+  border-bottom: none;  /* Gold entfernen */
+}
+
+/* Weißer + roter Balken unten wie Navbar */
+.card-header::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background: #fff;
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 0;
+}
+.card-header::after {
+  content: "";
+  display: block;
+  height: 4px;
+  background: red;
+  position: absolute;
+  left: 0; right: 0;
+  bottom: -4px;
+}
+
+/* === Buttons === */
+.btn-gold{
+  background: var(--gold-500);
+  color:#000;
+  border-color: var(--gold-500);
+}
+.btn-gold:hover{ filter: brightness(0.95); }
+
+/* === Hilfs-Container === */
+.container-narrow{ max-width: 1200px; margin: 0 auto; }
+
+
+/* Erzwinge unsere Schrift überall sichtbar */
+h1, h2, h3, h4, h5, h6,
+.navbar, .navbar * ,
+.card-header,
+label, .form-label,
+.btn, .badge {
+  font-family: "TradeGothicLTPro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* Bootstrap setzt nav-links auf 500 → auf 700 (oder 400) stellen */
+.navbar .nav-link { 
+  font-weight: 700;    /* gewünschtes Gewicht */
+}
+
+/* Card-Header ruhig auch kräftig */
+.card-header { 
+  font-weight: 700;
+}
+
+/* Optional: Form-Labels etwas kräftiger für bessere Lesbarkeit */
+.form-label { 
+  font-weight: 700;
+}
+
+/* Brand (Logos + evtl. Text) – falls du Text daneben nutzt */
+.navbar-brand { 
+  font-weight: 700;
+}
+
+/* =============== LOGIN PAGE ================== */
+.auth-container {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  padding: 28px 24px 24px;
+}
+
+.auth-title {
+  text-align: center;
+  font-weight: 700;   /* Bold aus deiner TradeGothic */
+  font-size: 2.2rem;
+  margin: 0 0 1.2rem 0;
+}
+
+.auth-form { margin-top: 0.5rem; }
+
+.auth-field { margin-bottom: 14px; }
+.auth-field label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.auth-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+}
+.auth-field input:focus {
+  border-color: var(--violet-600);
+  box-shadow: 0 0 0 3px rgba(53,31,74,0.15); /* Vereinsviolett */
+}
+
+.auth-button {
+  width: 100%;
+  padding: 10px 14px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  background: var(--violet-600);
+  color: #fff;
+  cursor: pointer;
+}
+.auth-button:hover { filter: brightness(1.05); }
+
+.auth-error {
+  background: #ffe8e8;
+  color: #8a1f1f;
+  border: 1px solid #f0bcbc;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+/* --- Login: stärkere Selektoren, damit sicher überschrieben wird --- */
+.auth-card input,
+.auth-card input[type="text"],
+.auth-card input[type="password"]{
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfcfcf !important;
+  border-radius: 10px !important;
+  font-size: 1rem;
+  font-family: "TradeGothicLTPro", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auth-card input:focus{
+  border-color: var(--violet-600) !important;
+  box-shadow: 0 0 0 3px rgba(53,31,74,0.15);
+}
+
+
+
+/* === Login Fine-Tuning === */
+
+/* Rahmen der Box stärker */
+.auth-card {
+  border: 3px solid rgba(0,0,0,0.15); /* vorher 1px */
+}
+
+/* Labels größer */
+.auth-field label {
+  font-size: 1.3rem;  /* Standard ca. 1rem → leicht vergrößern */
+}
+
+.auth-button {
+  width: 100%;
+  padding: 12px 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  background: var(--violet-600);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.auth-button:hover {
+  background: var(--gold-500);
+  color: #000;
+  box-shadow: 0 0 12px rgba(53,31,74,0.6); /* violetter Glow */
+}
+
+/* === Login Box Rahmen in Vereinsviolett === */
+.auth-card {
+  border: 2px solid var(--violet-600);
+}
+
+
+.auth-button:hover {
+  background: var(--gold-500);
+  color: #000;              /* Schwarze Schrift auf Gold für Kontrast */
+  filter: none;             /* den alten Hover-Effekt überschreiben */
+}
+
+.auth-card {
+  border: 2px solid var(--violet-600);
+  transition: box-shadow 0.4s ease; /* weicher Übergang */
+  box-shadow: 
+    0 6px 12px rgba(0,0,0,0.24),          /* dunkler Kernschatten */
+    0 20px 40px rgba(0,0,0,0.15),        /* weicher grauer Schatten */
+    0 0 20px rgba(139, 69, 206, 0.65),        /* violetter Schimmer (var(--violet-600)) */
+    0 0 40px rgba(209, 174, 98, 0.65);      /* goldener Schimmer (var(--gold-500)) */
+}
+
+.auth-card:hover {
+  box-shadow: 
+    0 6px 12px rgba(0,0,0,0.24),
+    0 20px 40px rgba(0,0,0,0.15),
+    0 0 35px rgba(139, 69, 206, 0.85),   /* kräftiger + größerer violetter Glow */
+    0 0 40px rgba(209, 174, 98, 0.65);   /* Gold gleich lassen */
+}
+
+.badge-intern {
+  background: red;
+  color: #fff;
+  font-weight: 700;
+}
+
+.chart-legend {
+  margin-top: 16px;         /* mehr Platz nach oben */
+  border-top: 1px solid #ddd; /* dezenter Strich */
+  padding-top: 6px;         /* Abstand zwischen Strich und Text */
+  font-style: italic;
+}
+
+.chart-desc{
+  margin-top: 10px;     /* Abstand zur Card-Unterkante */
+  margin-bottom: 18px;  /* Abstand zum Footer-Strich */
+  color: #6c757d;
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+/* --- Offcanvas-Breite anpassen (nur dein Menü) --- */
+#offcanvasNav { --bs-offcanvas-width: 300px; }
+@media (max-width: 575.98px){ #offcanvasNav { --bs-offcanvas-width: 85vw; } }
+
+/* Auf sehr kleinen Screens etwas flexibler */
+@media (max-width: 575.98px) {   /* Bootstrap "sm" Breakpoint */
+  #offcanvasNav {
+    --bs-offcanvas-width: 85vw;  /* 85% der Bildschirmbreite */
+  }
+}
+
+/* (Optional) Innenabstände etwas kompakter */
+#offcanvasNav .offcanvas-body {
+  padding: 0.75rem 1rem;
+}
+
+
+.navbar-center { pointer-events: none; }

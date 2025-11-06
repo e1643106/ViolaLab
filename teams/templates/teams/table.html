@@ -1,0 +1,84 @@
+<!--
+
+  Seinfache, selbstenthaltene Tabellenansicht für Teamdaten – bewusst ohne base.html,
+  damit die Seite leicht druck- und exportfähig bleibt. für später
+
+  Erwartete Variablen (aus der View):
+  - headers: Liste der Spaltenüberschriften (Strings) in gewünschter Reihenfolge
+  - rows   : Liste von Zeilen; jede Zeile ist ein Mapping/Dict (Spaltenname -> Wert)
+
+  Abhängigkeiten:
+  - {% load teams_extras %} stellt den Template-Filter `get_item` bereit,
+    mit dem per Schlüssel auf Werte in `rows` zugegriffen wird: `{{ r|get_item:h }}`.
+
+  Verhalten:
+  - Rendert <thead> aus `headers` und <tbody> zeilenweise aus `rows`.
+  - Zeigt am Ende die Anzahl der Zeilen.
+  - Fallback-Text, wenn keine Daten vorhanden sind.
+
+
+  - Die eingebetteten CSS-Regeln helfen für eine klare, kontrastreiche Tabelle
+    (Border, Zebra-Stripes) ohne zusätzliche Assets.
+-->
+{% load teams_extras %}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Teams – Datentabelle</title>
+    <style>
+
+
+      body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background: #f7f7f7; text-align: left; }
+      tr:nth-child(even) { background: #fafafa; }
+
+    </style>
+  </head>
+  <body>
+    <!-- Überschrift der Seite -->
+    <h1>Teams – Datentabelle</h1>
+
+    <!--
+      Erwartete Variablen (von der View):
+      - headers: Liste der Spaltenüberschriften (Strings)
+      - rows:    Liste von Zeilen; jede Zeile ist ein Mapping (z. B. dict) "spaltenname -> wert"
+      Hinweis: Das Template ist bewusst minimal und unabhängig von base.html (Export/Print)
+  -->
+
+    {% if rows %}
+      <table>
+        <thead>
+          <tr>
+            {% for h in headers %}
+              <!-- Tabellenkopf: zeigt jeden Spaltennamen -->
+              <th>{{ h }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              {% for h in headers %}
+                <!--
+                  Zugriff auf r[h] mit einem benutzerdefinierten Template-Filter:
+                  - get_item komt aus teams_extras (siehe teams/templatetags/teams_extras.py)
+                  - Motivation: In Django-Templates kann man nicht direkt r[h] schreiben anscheinend,
+                    daher hilft ein Filter, um Werte per Schlüssel aus Dictionaries/Objekten zu holen.
+            -->
+                <td>{{ r|get_item:h }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <!-- Einfache Summenzeile (Anzahl der Zeilen) -->
+      <p>Zeilen: {{ rows|length }}</p>
+    {% else %}
+      <!-- Fallback, wenn es keine Daten gibt -->
+      <p>Keine Daten gefunden.</p>
+    {% endif %}
+  </body>
+</html>

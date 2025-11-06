@@ -1,0 +1,79 @@
+<!--
+Zentrales Template für das Teams-Dashboard.
+Erbt das Grundlayout (base.html), bindet Dashboard-spezifisches CSS/JS ein
+und setzt drei Teil-Templates ein: Filter, Matchday, Charts und Metriken
+
+
+Datenfluss:
+- Die View `league_dashboard` liefert u.a. `chart_data_json` und `chart_meta_json`.
+- Diese JSONs werden als `window.DASHBOARD_BOOTSTRAP` ins Frontend gehängt,
+damit `static/js/dashboard/main.js` beim Laden sofort initialisieren kann.
+-->
+
+{# Basis-Layouts: Kopf-/Fußbereich, Vendor-Skripte etc. #}
+{% extends "base.html" %} 
+
+{# Ermöglicht die Verwendung von {% static '...' %} für statische Assets #}
+{% load static %} 
+
+{# Setzt den <title>-Text im Browser-Tab #}
+{% block title %}Dashboard – ViolaLab{% endblock %} 
+
+{% block extra_css %}
+  {# Dashboard-spezifische Styles (zusätzlich zu globalen Styles in base.html) #}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+
+
+
+
+{% block content %}
+  {# Hauptinhalt: strukturieren die Seite aktuell über drei Teil-Templates  #}
+
+  {# 1) Filterleiste (Liga/Team/Kategorien/Metrik) #}
+  {% include "teams/_filters.html" %}
+
+  {# 2) Matchday-Übersicht (Donut + Mini-Bars), nur sichtbar/wirksam wenn Kategorie SPieltagsübersicht aktiv ist #}
+  {% include "teams/_matchday.html" %}
+
+  {# 3) Chartbereich + Metrikliste (Hauptvisualisierung) #}
+  {% include "teams/_charts_and_metrics.html" %}
+
+{% endblock %}
+
+
+
+
+
+{% block extra_js %}
+<!-- Bootstrapping-Objekt für das Frontend:
+    - Wird VOR dem Modul-Skript definiert, damit main.js direkt darauf zugreifen kann.
+    - `|safe` verhindert Auto-Escaping von JSON (wichtig, da es bereits ein JSON-String ist).
+    - `escapejs` schützt eingebettete Strings vor JS-Breakout.
+-->
+
+
+  <script>
+    window.DASHBOARD_BOOTSTRAP = {
+      // Initiale Chart-Daten (Labels und datasets) – kommt als JSON-Objekt oder null
+      initialData: {{ chart_data_json|safe }},
+
+      // Metadaten (Mittelwerte, Quantile, Skalenhinwise, Format, optional Benchmarks)
+      initialMeta: {{ chart_meta_json|safe }},
+
+      // Endpoint für AJAX-Updates (liefert die gleiche Payload wie die View, aber als JSON)
+      endpoint: "{% url 'teams:dashboard_data' %}",
+
+      // Vorauswahl des Teams (wird z.b. für UI-State im Frontend genutzt)
+      selectedTeam: "{{ selected_team|default:'Alle'|escapejs }}"
+    };
+  </script>
+
+    
+  <!-- Entry-Point des ES-Moduls.
+      - `type="module"` erlaubt ES6-Imports innerhalb von main.js.
+      - main.js importiert intern api.js, charts.js und matchday.js und initialisiert die Seite.
+-->
+  <script type="module" src="{% static 'js/dashboard/main.js' %}"></script>
+{% endblock %}

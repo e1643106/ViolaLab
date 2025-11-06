@@ -1,0 +1,63 @@
+<!--
+Spieltag – Übersicht
+Aufgaben:
+- Header mit Titel und Untertitel (Datum, Gegner, H/A, Ergebnis, xG)
+- Navigation (Vor/Zurück/Select) 
+- Body mit Infozeile, Kachel-Container und Fehlerbox
+
+
+Datenquelle und Steuerung (aus dem Backend via _compute_payload):
+- payload.overview_mode == 'matchday' aktiviert die Anzeige
+- payload.matchdays: Liste der Spiele [{id, label}, ...] für das Dropdown #mdSelect
+- payload.selected_match_id: aktuell ausgewähltes Spiel
+- payload.fixture: {date, home_away, opponent, goals, opp_goals, xg, opp_xg} -> #mdSubtitle/#mdInfo
+- payload.tiles: Liste der Kacheln (type: 'pie'|'bars', key, label, format, team, opp) -> #matchdayTiles
+- payload.md_error: Fehlermeldung speziell für Matchday -> #mdErrorBox
+
+
+Sichtbarkeit:
+- Das Card-Element ist initial `hidden`
+- Das Frontend (matchday.js/main.js) entfernt `hidden`, sobald Spieltag_Übersicht als Kategorie gewählt ist
+und die Payload Matchday-Daten enthält
+-->
+
+
+
+
+<div id="matchdayWrap" class="card mb-3" hidden>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <!-- Titel, kann von JS statisch gelassen oder bei bedarf angepasst werden -->
+      <strong id="mdTitle">Spieltag – Übersicht</strong>
+      <!-- Untertitel: wird dynamisch aus payload.fixture befüllt (Datum, Gegner, H/A) -->
+      <div class="small text-muted" id="mdSubtitle"></div>
+    </div>
+
+    <!-- Steuerleiste: Navigation zwischen Spieltagen -->
+    <div class="d-flex align-items-center gap-2" id="mdControls">
+      <!-- Vorheriger Spieltag -->
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="mdPrev">◀</button>
+      <!-- Dropdown mit allen verfügbaren Spieltagen (Label kommt aus payload.matchdays[i].label) -->
+      <select id="mdSelect" class="form-select form-select-sm" style="min-width:260px;"></select>
+      <!-- Nächster Spieltag -->
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="mdNext">▶</button>
+    </div>
+  </div>
+
+<div class="card-body">
+  <!-- Infozeile: kompakte Zusammenfassung des Fixtures kann man noch schöner machen-->
+  <div id="mdInfo" class="mb-2"></div>
+
+
+  <!-- Kachel-Container: JS rendert die Donut und Mini-Bar Tiles aus payload.tiles -->
+  <div id="matchdayTiles"></div>
+
+
+  <!-- Fehlerbereich: spezifische Meldungen für Matchday (z.b. keine Spiele gefunden) -->
+  <div class="mt-2" id="mdErrorBox" aria-live="polite"></div>
+  <!--
+  aria-live="polite": Screenreader lesen Änderungen vor, ohne andere Aktionen zu unterbrechen
+  JS setzt  textContent/innerHTML, wenn payload.md_error gefüllt ist
+  -->
+  </div>
+</div>

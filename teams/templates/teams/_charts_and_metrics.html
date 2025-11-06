@@ -1,0 +1,76 @@
+ <!--
+  Charts und Metriken 
+  - Linke Spalte: Chartkarte mit Titel, Switches (Benchmark, Lollipop), Canvas, Legenden und Fehlerbox
+  - Rechte Spalte: Metrikliste als Ankreuz-Buttons (genau eine Metrik auswählbar wird snoch geändert)
+
+  Zusammenspiel mit JS (main.js / charts.js):
+  - #leagueChart        : Chart.js Canvas; Daten und Optionen kommen aus window.DASHBOARD_BOOTSTRAP und AJAX
+  - #benchSwitchWrap    : wird nur angezeigt, wenn payload.bench vorhanden ist (Bundesliga + CSV (für Bundesliga AUT))
+  - #benchSwitch        : toggelt eine Benchmark-Linie ("TOP 6 Schnitt") im Chart
+  - #lolliSwitchWrap    : wird nur angezeigt, wenn Lollipop-Modus sinnvoll ist (z.b. Team-Zeitreihe vs. Ligenvergleich)
+  - #lolliSwitch        : toggelt zwischen Balken-Chart und Lolipop
+  - #legendText         : optionale Legende/Erklärungstext für ausgewählter Metrik
+  - #distLegend         : Legende/Label für Quantile/IQR/Mittelwert-Linien
+  - #errorBox           : zeigt Backend-Fehlermeldungen (payload.error)
+  - .metric-radio       : Radio-Inputs; ein Klick löst Neuladen mit neuer "metric" aus, sonst hats nie funktioniert
+-->
+
+<div class="row g-3">
+  <div class="col-lg-9">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span id="chartTitle">
+          {# Titel zusammengesetzt aus: Metrikname – optional Team – Liga/Label #}
+          {{ pretty_metric }}{% if selected_team and selected_team != "Alle" %} – {{ selected_team }}{% endif %}{% if selected_label or selected %} – {{ selected_label|default:selected }}{% endif %}
+        </span>
+
+        <div class="d-flex align-items-center gap-3">
+          {# Benchmark-Switch: initial verborgen; JS blendet ein wenn payload.bench existiert #}
+          <div class="form-check form-switch" id="benchSwitchWrap" style="display:none;">
+            <input class="form-check-input" type="checkbox" id="benchSwitch">
+            <label class="form-check-label" for="benchSwitch">TOP 6 Schnitt</label>
+          </div>
+          {# Lollipop: initial verborgen; über JS entschedeint, wann die Option sinnvoll ist #}
+          <div class="form-check form-switch" id="lolliSwitchWrap" style="display:none;">
+            <input class="form-check-input" type="checkbox" id="lolliSwitch">
+            <label class="form-check-label" for="lolliSwitch">Lollipop</label>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="height:460px;">
+        {# Chart.js Canvas – charts.js initialisiert/updated den Chart hier #}
+        <canvas id="leagueChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-desc text-muted small mt-2" id="legendBox">
+      {# Optionaler Legendentext aus Backend (COLUMN_LABELS[metric][1]) #}
+      {% if legend %}<em id="legendText">{{ legend }}</em>{% else %}<em id="legendText"></em>{% endif %}
+      {# JS schreibt Labels für Verteilungs-Overlays (Quantile, IQR, Mean, Bench) hinein #}
+      <div id="distLegend" class="small mt-1"></div>
+    </div>
+
+    {# Fehlerbereich: zeigt z. B. "Keine Daten für Plot gefunden." #}
+    <div class="mt-2" id="errorBox">{% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}</div>
+  </div>
+
+  <div class="col-lg-3">
+    <div class="card metrics-card">
+      <div class="card-header">Metriken</div>
+      <div class="card-body" id="metricList">
+        {% if metrics_options %}
+          {# Eine Liste: genau EINE Metrik aktiv #}
+          {% for key, label in metrics_options %}
+            <div class="form-check">
+              <input class="form-check-input metric-radio" type="radio" name="metric" id="metric_{{ key }}" value="{{ key }}"
+                {% if key == metric %}checked{% endif %}/>
+              <label class="form-check-label" for="metric_{{ key }}">{{ label }}</label>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted small">Keine Metriken für die aktuelle Auswahl.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

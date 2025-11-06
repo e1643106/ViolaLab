@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Navigator – ViolaLab{% endblock %}
+
+{% block content %}
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-header">Teams & Analysen</div>
+        <div class="card-body">
+          <p>Zum Dashboard mit Liga-/Team-/Metrik-Analysen.</p>
+          <a class="btn btn-primary" href="{% url 'teams:dashboard' %}">Zum Teams-Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platz für weitere Kacheln/Links (später) -->
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-header">Mehr</div>
+        <div class="card-body">
+          <p>Weitere Module können hier verlinkt werden.</p>
+          <button class="btn btn-gold" disabled>Demnächst</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

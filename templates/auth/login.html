@@ -1,0 +1,40 @@
+{% extends "base.html" %} {#  -> datei erbt von base.html, alles was hier in bennante blöcke eingefügt wird ..#}
+{#.. z.b. title, content etc... wird in die entsprechende stelle von base.html eingefügt #}
+{# es ist also base.html das grundgerüst#}
+
+{% load static %} {# lädt static template tags#}
+
+{% block title %}Login{% endblock %} {# titel vom tab, beim aufruf wir der block title von diesem ersetzt #}
+
+{% block content %} {# beginnt den content block, der in base.html vorgesehen ist #}
+
+<div class="auth-container"> {# startet layout vom container, auth-container liegt in static/theme.css #}
+  <div class="auth-card">    {# startet layout vom container, auth-card liegt in static/theme.css #}
+    <h1 class="auth-title">Login</h1>
+
+    <form method="post" action="{% url 'login' %}" class="auth-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="auth-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="auth-field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+      </div>
+
+      <div class="auth-field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+      </div>
+
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
+
+      <button type="submit" class="auth-button">Log in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
