@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load player_extras %}
 {% block title %}Players – ViolaLab{% endblock %}
 {% block extra_css %}
   <style>
@@ -87,7 +88,7 @@
                 <tr>
                   <th scope="row">{{ stat.player_name }}</th>
                   {% for metric, label, fmt in season_metrics %}
-                    {% with value=getattr(stat, metric) %}
+                    {% with value=stat|attr:metric %}
                       <td class="text-end">
                         {% if value is not None %}
                           {% if fmt == "percent" %}
