@@ -87,19 +87,26 @@ function styleBarDataset(ds, idx = 0) {
   const violet = css.getPropertyValue('--violet-600').trim() || '#5b3ea4';
   const gold = css.getPropertyValue('--gold-500')?.trim() || '#cfa959';
   ds.type = ds.type || 'bar';
-  ds.barPercentage = 0.8;
-  ds.categoryPercentage = 0.8;
+  ds.categoryPercentage = 0.82;
   ds.grouped = false;
+
   if (idx === 0) {
+    // Vordergrund (Erfolgreiche Pressures)
     ds.backgroundColor = violet;
     ds.borderColor = violet;
     ds.borderWidth = 0;
-    ds.order = 1;
+    ds.barPercentage = 0.6; // etwas schlanker, damit der Overlay-Balken sichtbar bleibt
+    ds.order = 2;
+    ds.z = 2;
   } else {
-    ds.backgroundColor = 'rgba(207, 169, 89, 0.35)';
-    ds.borderColor = gold || '#cfa959';
-    ds.borderWidth = 1.5;
-    ds.order = 0;
+    // Overlay (z. B. Pressures Gegner) – volle Breite und zuerst gerendert
+    const overlayFill = gold || '#cfa959';
+    ds.backgroundColor = overlayFill ? overlayFill + '55' : 'rgba(207, 169, 89, 0.35)';
+    ds.borderColor = overlayFill;
+    ds.borderWidth = 1;
+    ds.barPercentage = 0.92;
+    ds.order = 1;
+    ds.z = 1;
   }
 }
 // Perzentil mit linearer Interpolation (wie im Backend)
