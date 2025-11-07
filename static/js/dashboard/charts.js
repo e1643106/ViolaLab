@@ -57,6 +57,11 @@ let useBenchmark = false;                // UI-Status Benchmark-Schalter
 let lastChartData = null;                // zuletzt übergebene chartData (für Redraws bei Toggles)
 let lastMeta = null;                     // zuletzt übergebenes meta
 let togglesWired = false;                // verhindert doppelte Event-Bindings für die Switches
+const annotationVisibility = {           // Legenden-Toggles für Linien/Annotationen
+  leagueMean: false,
+  teamMean: false,
+  bench: false,
+};
 
 // ---------- Utils ----------
 export function isAlle(selTeam) {
@@ -88,6 +93,8 @@ function styleBarDataset(ds, idx = 0) {
   const gold = css.getPropertyValue('--gold-500')?.trim() || '#cfa959';
   ds.type = ds.type || 'bar';
   ds.categoryPercentage = 0.82;
+  ds.grouped = false;
+
 
   if (idx === 0) {
     // Vordergrund (Erfolgreiche Pressures)
@@ -149,11 +156,10 @@ function formatHoverLabel(ctx) {
     scaled >= 0
       ? Math.floor((scaled + Number.EPSILON) * f) / f
       : Math.ceil((scaled - Number.EPSILON) * f) / f;
-    const numeric = trunc.toFixed(dec) + (format === 'percent' ? ' %' : '');
-    const label = ctx?.dataset?.label;
-    const showLabel = label && !(lollipopMode && label === 'Stem');
-    return showLabel ? `${label}: ${numeric}` : numeric;
-
+  const numeric = trunc.toFixed(dec) + (format === 'percent' ? ' %' : '');
+  const label = ctx?.dataset?.label;
+  const showLabel = label && !(lollipopMode && label === 'Stem');
+  return showLabel ? `${label}: ${numeric}` : numeric;
 }
 
 // ---------- Skalen/Annotationen ----------
@@ -391,7 +397,6 @@ function legendItems(meta) {
   const violet = css.getPropertyValue('--violet-600').trim() || '#5b3ea4';
   const goldVar = css.getPropertyValue('--gold-500')?.trim();
   const gold = goldVar && goldVar !== '' ? goldVar : '#f59e0b';
-
   const red = '#ef4444';
   const items = [];
 
@@ -400,33 +405,38 @@ function legendItems(meta) {
     const overlay = lastChartData.datasets.find((ds, idx) => idx > 0 && typeof ds?.label === 'string' && /pressures gegner/i.test(ds.label));
     if (overlay) {
       const primaryLabel = typeof primary?.label === 'string' ? primary.label.split(' – ')[0] : 'Erfolgreiche Pressures Gegner';
+      const overlayIndex = lastChartData.datasets.indexOf(overlay);
+      const overlayHidden = chartInstance ? !chartInstance.isDatasetVisible(overlayIndex) : false;
+      const primaryHidden = chartInstance ? !chartInstance.isDatasetVisible(0) : false;
       items.push({
-        text: `Alle Pressures Gegner`,
+        text: `Alle Pressures Gegner zu ${primaryLabel}`,
         fillStyle: gold,
         strokeStyle: gold,
         lineWidth: 0,
-        hidden: false,
-        datasetIndex: lastChartData.datasets.indexOf(overlay),
+        hidden: overlayHidden,
+        datasetIndex: overlayIndex,
       });
       items.push({
         text: primaryLabel,
         fillStyle: violet,
         strokeStyle: violet,
         lineWidth: 0,
-        hidden: false,
+        hidden: primaryHidden,
         datasetIndex: 0,
       });
     }
   }
-
-
-
   if (Number.isFinite(meta?.league_mean)) {
     items.push({
       text: meta.metric_format === 'percent'
         ? `Ø Liga: ${(meta.league_mean * 100).toFixed(1)} %`
         : `Ø Liga: ${meta.league_mean.toFixed(2)}`,
-      fillStyle: gold, strokeStyle: gold, lineWidth: 0, hidden: false, datasetIndex: 0,
+      fillStyle: gold,
+      strokeStyle: gold,
+      lineWidth: 2,
+      lineDash: [6, 4],
+      hidden: !!annotationVisibility.leagueMean,
+      annotationKey: 'leagueMean',
     });
   }
   if (Number.isFinite(meta?.team_mean)) {
@@ -434,7 +444,12 @@ function legendItems(meta) {
       text: meta.metric_format === 'percent'
         ? `Ø Team: ${(meta.team_mean * 100).toFixed(1)} %`
         : `Ø Team: ${meta.team_mean.toFixed(2)}`,
-      fillStyle: red, strokeStyle: red, lineWidth: 0, hidden: false, datasetIndex: 0,
+      fillStyle: red,
+      strokeStyle: red,
+      lineWidth: 2,
+      lineDash: [6, 4],
+      hidden: !!annotationVisibility.teamMean,
+      annotationKey: 'teamMean',
     });
   }
   if (useBenchmark && benchAvailable(meta)) {
@@ -442,10 +457,46 @@ function legendItems(meta) {
     const t = meta.metric_format === 'percent' ? `${(v * 100).toFixed(1)} %` : v.toFixed(2);
     items.push({
       text: `TOP 6 Schnitt: ${t}`,
-      fillStyle: benchColor(), strokeStyle: benchColor(), lineWidth: 0, hidden: false, datasetIndex: 0,
+      fillStyle: benchColor(),
+      strokeStyle: benchColor(),
+      lineWidth: 2,
+      lineDash: [2, 2],
+      hidden: !!annotationVisibility.bench,
+      annotationKey: 'bench',
     });
   }
   return items;
+}
+
+function applyAnnotationVisibility(ann) {
+  if (!ann) return ann;
+  Object.entries(annotationVisibility).forEach(([key, hidden]) => {
+    if (ann[key]) ann[key].display = !hidden;
+  });
+  return ann;
+}
+
+function handleLegendClick(evt, legendItem, legend) {
+  const chart = legend?.chart || chartInstance;
+  if (!chart || !legendItem) return;
+
+  if (legendItem.annotationKey) {
+    const key = legendItem.annotationKey;
+    annotationVisibility[key] = !annotationVisibility[key];
+    const annotations = chart.options?.plugins?.annotation?.annotations;
+    if (annotations?.[key]) {
+      annotations[key].display = !annotationVisibility[key];
+      chart.update();
+    }
+    return;
+  }
+
+  if (typeof legendItem.datasetIndex === 'number' && legendItem.datasetIndex >= 0 && legendItem.datasetIndex < chart.data.datasets.length) {
+    const dsIndex = legendItem.datasetIndex;
+    const currentlyVisible = chart.isDatasetVisible(dsIndex);
+    chart.setDatasetVisibility(dsIndex, !currentlyVisible);
+    chart.update();
+  }
 }
 
 // Beschriftung des Verteilungs-Overlays unter dem Chart
@@ -569,7 +620,12 @@ export function createChart(chartData, meta) {
     maintainAspectRatio: false,
     animation: { duration: 800, easing: 'easeOutQuart' },
     plugins: {
-      legend: { display: true, position: 'top', labels: { generateLabels: () => legendItems(meta) } },
+      legend: {
+        display: true,
+        position: 'top',
+        labels: { generateLabels: () => legendItems(meta) },
+        onClick: handleLegendClick,
+      },
       tooltip: {
         enabled: true, intersect: true, displayColors: false,
         filter: (ti) => !isScatterTooltipItem(ti),
@@ -582,7 +638,7 @@ export function createChart(chartData, meta) {
 
   if (useLolli) {
     // Lollipop: x-Achse numerisch, y-Achse Kategorien (Teamnamen)
-    const ann = buildAnnotationsLollipop(meta, labels.length, scale.min, scale.max);
+    const ann = applyAnnotationVisibility(buildAnnotationsLollipop(meta, labels.length, scale.min, scale.max));
     optionsCommon.indexAxis = 'y';
     optionsCommon.plugins.annotation = { clip: true, annotations: ann };
     optionsCommon.scales = { x: scale, y: { grid: { color: 'rgba(0,0,0,0.08)' } } };
@@ -600,7 +656,7 @@ export function createChart(chartData, meta) {
       styleBarDataset(ds, idx);
       return ds;
     });
-    const ann = buildAnnotations(meta, labels.length, scale.min, scale.max);
+    const ann = applyAnnotationVisibility(buildAnnotations(meta, labels.length, scale.min, scale.max));
     optionsCommon.plugins.annotation = { clip: true, annotations: ann };
     optionsCommon.scales = { x: { ticks: { maxRotation: 45, minRotation: 45 } }, y: scale };
     chartInstance = new Chart(ctx, {
