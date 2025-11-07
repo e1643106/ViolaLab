@@ -35,7 +35,10 @@
     }
 */
 
+
 // Chart.js – Setup, Skalen, Annotationen, Lollipop, Rendering
+
+
 
 // UMD -> ES-Module Bridge (weil Chart.js/D3 als <script> UMD geladen werden)
 const Chart = window.Chart;
