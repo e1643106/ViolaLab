@@ -88,7 +88,6 @@ function styleBarDataset(ds, idx = 0) {
   const gold = css.getPropertyValue('--gold-500')?.trim() || '#cfa959';
   ds.type = ds.type || 'bar';
   ds.categoryPercentage = 0.82;
-  ds.grouped = false;
 
   if (idx === 0) {
     // Vordergrund (Erfolgreiche Pressures)
@@ -150,7 +149,11 @@ function formatHoverLabel(ctx) {
     scaled >= 0
       ? Math.floor((scaled + Number.EPSILON) * f) / f
       : Math.ceil((scaled - Number.EPSILON) * f) / f;
-  return trunc.toFixed(dec) + (format === 'percent' ? ' %' : '');
+    const numeric = trunc.toFixed(dec) + (format === 'percent' ? ' %' : '');
+    const label = ctx?.dataset?.label;
+    const showLabel = label && !(lollipopMode && label === 'Stem');
+    return showLabel ? `${label}: ${numeric}` : numeric;
+
 }
 
 // ---------- Skalen/Annotationen ----------
@@ -384,9 +387,40 @@ function buildAnnotationsLollipop(meta, labelsCount, xMin, xMax) {
 
 // Legenden-Einträge (eigene, da Annotationen nicht automatisch in Legende auftauchen)
 function legendItems(meta) {
-  const gold = '#f59e0b';
+  const css = getComputedStyle(document.documentElement);
+  const violet = css.getPropertyValue('--violet-600').trim() || '#5b3ea4';
+  const goldVar = css.getPropertyValue('--gold-500')?.trim();
+  const gold = goldVar && goldVar !== '' ? goldVar : '#f59e0b';
+
   const red = '#ef4444';
   const items = [];
+
+  if (!lollipopMode && Array.isArray(lastChartData?.datasets) && lastChartData.datasets.length) {
+    const primary = lastChartData.datasets[0];
+    const overlay = lastChartData.datasets.find((ds, idx) => idx > 0 && typeof ds?.label === 'string' && /pressures gegner/i.test(ds.label));
+    if (overlay) {
+      const primaryLabel = typeof primary?.label === 'string' ? primary.label.split(' – ')[0] : 'Erfolgreiche Pressures Gegner';
+      items.push({
+        text: `Alle Pressures Gegner`,
+        fillStyle: gold,
+        strokeStyle: gold,
+        lineWidth: 0,
+        hidden: false,
+        datasetIndex: lastChartData.datasets.indexOf(overlay),
+      });
+      items.push({
+        text: primaryLabel,
+        fillStyle: violet,
+        strokeStyle: violet,
+        lineWidth: 0,
+        hidden: false,
+        datasetIndex: 0,
+      });
+    }
+  }
+
+
+
   if (Number.isFinite(meta?.league_mean)) {
     items.push({
       text: meta.metric_format === 'percent'

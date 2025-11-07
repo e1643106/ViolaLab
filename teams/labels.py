@@ -135,6 +135,8 @@ COLUMN_LABELS = {
     "counterpressures": ("Gegenpressing", "Anzahl der Pressures, die innerhalb von 5 Sekunden nach einem Ballverlust ausgeübt werden. Pressure: Eine Aktion bei der ein Spieler Druck auf den ballführenden Gegenspieler ausübt", "int"),
     "pressure_regains": ("Erfolgreiche Pressure", "Anzahl der Ballgewinne innerhalb von 5 Sekunden, nachdem ein Spieler Druck auf einen Gegenspieler ausgeübt hat", "int"),
     "opponent_pressure_regains": ("Erfolgreiche Pressure Gegner", "Anzahl der Ballverluste innerhalb von 5 Sekunden, nachdem ein Gegenspieler Druck auf einen Spieler ausgeübt hat", "int"),
+
+    
     "counterpressure_regains": ("Erfolgreiche Gegenpressing", "Anzahl der Ballgewinne innerhalb von 5 Sekunden, nachdem ein Spieler im Gegenpressing Druck auf einen Gegenspieler ausgeübt hat", "int"),
     "defensive_action_regains": ("Erfolgreiche Defensiv-Aktion", "Anzahl der Ballgewinne innerhalb von 5 Sekunden nach einer defensiven Aktion (z. B. Tackling, Interception, geblockter Pass oder Pressure)","int"),
     "yellow_cards": ("Gelbe Karten", None, "int"),
@@ -190,7 +192,7 @@ COLUMN_LABELS = {
     "opponent_opp_final_third_pass_ratio": ("F3-Quote Gegner (%)", "Prozentualer Anteil der gegnerischen Pässe ins letzte Drittel, die erfolgreich ankommen", "percent"),
     "opponent_aggression": ("Aggression Gegner", "Anteil der eigenen Ballannahmen, die innerhalb von 2 Sekunden vom Gegner getackelt, gepresst oder gefoult werden (%)", "percent"),
     "opponent_passing_ratio": ("Passquote Gegner (gesamt)", "Anteil der erfolgreichen Pässe des Gegners (%)", "percent"),
-    "opponent_pressures": ("Pressures Gegner", "Anzahl der Aktionen, bei denen ein gegnerischer Spieler Druck auf den ballführenden Spieler ausübt", "int"),
+    "opponent_pressures": ("Alle Pressures Gegner", "Anzahl der Aktionen, bei denen ein gegnerischer Spieler Druck auf den ballführenden Spieler ausübt", "int"),
     "opponent_counterpressures": ("Gegenpressing Gegner", "Anzahl der Pressures, die der Gegner innerhalb von 5 Sekunden nach einem Ballverlust ausgeübt hat", "int"),
     "opponent_counterpressure_regains": ("Erfolgreiche Gegenpressing Gegner", "Anzahl der Ballgewinne des Gegners innerhalb von 5 Sekunden, nachdem er im Gegenpressing Druck ausgeübt hat", "int"),
     "opponent_defensive_action_regains": ("Erfolgreiche Defensiv-Aktionen Gegner", "Anzahl der Ballgewinne des Gegners innerhalb von 5 Sekunden nach einer defensiven Aktion (z. B. Tackling, Interception, geblockter Pass,...)", "int"),
