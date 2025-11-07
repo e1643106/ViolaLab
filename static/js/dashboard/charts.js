@@ -82,12 +82,25 @@ function valueFromCtx(ctx) {
   return Number(r);
 }
 // Einheitliches Styling für Balken-DS (Vereinsfarbe/Violett aus CSS-Variable)
-function styleBarDataset(ds) {
+function styleBarDataset(ds, idx = 0) {
   const css = getComputedStyle(document.documentElement);
   const violet = css.getPropertyValue('--violet-600').trim() || '#5b3ea4';
-  ds.backgroundColor = violet;
-  ds.borderColor = violet;
-  ds.borderWidth = 0;
+  const gold = css.getPropertyValue('--gold-500')?.trim() || '#cfa959';
+  ds.type = ds.type || 'bar';
+  ds.barPercentage = 0.8;
+  ds.categoryPercentage = 0.8;
+  ds.grouped = false;
+  if (idx === 0) {
+    ds.backgroundColor = violet;
+    ds.borderColor = violet;
+    ds.borderWidth = 0;
+    ds.order = 1;
+  } else {
+    ds.backgroundColor = 'rgba(207, 169, 89, 0.35)';
+    ds.borderColor = gold || '#cfa959';
+    ds.borderWidth = 1.5;
+    ds.order = 0;
+  }
 }
 // Perzentil mit linearer Interpolation (wie im Backend)
 function quantile(sortedVals, p) {
@@ -500,9 +513,12 @@ export function createChart(chartData, meta) {
   const ctx = canvas.getContext('2d');
 
   const labels = chartData.labels || [];
+  const allVals = (chartData.datasets || [])
+    .flatMap((ds) => (ds.data || []).map(Number))
+    .filter((v) => Number.isFinite(v));
   const baseVals = (chartData.datasets[0].data || []).map(Number);
   // Für die Skala ggf. Benchmark-Wert ergänzen, damit die Linie innerhalb der Achse liegt
-  const forScale = addBenchToValues(baseVals, meta);
+  const forScale = addBenchToValues(allVals.length ? allVals : baseVals, meta);
   const scale = computeScale(forScale, currentMetricFormat, meta?.scale_hints, meta?.quantiles);
 
   if (chartInstance) chartInstance.destroy(); // vollständiger Rebuild → einfacher & robust
@@ -538,14 +554,17 @@ export function createChart(chartData, meta) {
     renderDistLegend(meta, scale.min, scale.max);
   } else {
     // Standard: Balken-Chart (x: Kategorien, y: Werte)
-    const ds = { ...chartData.datasets[0] };
-    styleBarDataset(ds);
+    const datasets = chartData.datasets.map((orig, idx) => {
+      const ds = { ...orig };
+      styleBarDataset(ds, idx);
+      return ds;
+    });
     const ann = buildAnnotations(meta, labels.length, scale.min, scale.max);
     optionsCommon.plugins.annotation = { clip: true, annotations: ann };
     optionsCommon.scales = { x: { ticks: { maxRotation: 45, minRotation: 45 } }, y: scale };
     chartInstance = new Chart(ctx, {
       type: 'bar',
-      data: { labels, datasets: [ds] },
+      data: { labels, datasets },
       options: optionsCommon,
     });
     renderDistLegend(meta, scale.min, scale.max);

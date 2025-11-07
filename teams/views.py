@@ -475,8 +475,18 @@ def _compute_payload(params):
                     )
                 )
 
+                extra_fields = []
+                include_opponent_pressures = metric == "opponent_pressure_regains"
+                if include_opponent_pressures:
+                    extra_fields.append("opponent_pressures")
+
+                value_rows = list(
+                    team_qs.values("match_date", "opponent_name", metric, *extra_fields)
+                )
+
                 labels, values = [], []
-                for row in team_qs.values("match_date", "opponent_name", metric):
+                overlay_values = [] if include_opponent_pressures else None
+                for row in value_rows:
                     opp = row.get("opponent_name") or "?"
                     d = row.get("match_date")
                     try:
@@ -486,18 +496,43 @@ def _compute_payload(params):
                     labels.append(f"{opp} – {date_pretty}")
                     val = row.get(metric)
                     values.append(None if val is None else round(float(val), 6))
+                    if overlay_values is not None:
+                        opp_val = row.get("opponent_pressures")
+                        overlay_values.append(
+                            None if opp_val is None else round(float(opp_val), 6)
+                        )
 
                 # Null-Werte entfernen (sowohl aus Labels als auch Werten)
-                clean = [(lab, v) for lab, v in zip(labels, values) if v is not None]
-                labels = [lab for lab, _ in clean]
-                values = [v for _, v in clean]
+                clean = [
+                    (lab, v, None if overlay_values is None else overlay_values[i])
+                    for i, (lab, v) in enumerate(zip(labels, values))
+                    if v is not None
+                ]
+                labels = [lab for lab, _, _ in clean]
+                values = [v for _, v, _ in clean]
+                if overlay_values is not None:
+                    overlay_values = [ov for _, _, ov in clean]
 
                 if labels:
                     team_mean = (sum(values) / len(values)) if values else None
-                    chart_data = {
-                        "labels": labels,
-                        "datasets": [{"type": "bar", "label": f"{pretty_metric} – {selected_team}", "data": values}],
-                    }
+                    datasets = [
+                        {
+                            "type": "bar",
+                            "label": f"{pretty_metric} – {selected_team}",
+                            "data": values,
+                        }
+                    ]
+                    if overlay_values is not None and any(v is not None for v in overlay_values):
+                        overlay_label = COLUMN_LABELS.get("opponent_pressures", ("Pressures Gegner",))[0]
+                        datasets.append(
+                            {
+                                "type": "bar",
+                                "label": f"{overlay_label}",
+                                "data": overlay_values,
+                            }
+                        )
+
+                    chart_data = {"labels": labels, "datasets": datasets}
                 else:
                     error = "Keine Daten für diese Mannschaft / Metrik gefunden."
 
@@ -514,7 +549,9 @@ def _compute_payload(params):
     # Skalenhinweise für das Frontend (Chart.js) berechnen
     scale_hints = None
     if chart_data and chart_data.get("datasets"):
-        values = chart_data["datasets"][0].get("data", [])
+        values = []
+        for ds in chart_data["datasets"]:
+            values.extend([v for v in ds.get("data", []) if v is not None])
         scale_hints = _scale_hints(values, metric_format or "float")
 
     # CSV-Referenz (nur für Bundesliga AUT sichtbar)
