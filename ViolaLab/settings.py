@@ -108,6 +108,10 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
+            "libraries": {
+                # Ensure custom players dashboard filters are always available
+                "player_extras": "players.templatetags.player_extras",
+            },
         },
     },
 ]
