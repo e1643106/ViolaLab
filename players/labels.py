@@ -71,7 +71,9 @@ COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "games_subbed_on": ("Einwechslungen", "Anzahl der Einwechslungen", "int"),
     "games_subbed_off": ("Auswechslungen", "Anzahl der Auswechslungen", "int"),
     "most_recent_match": ("Letztes Spiel", "ID des jüngsten Einsatzes", "int"),
+
     # Scoring & Produktion
+
     "goals": ("Tore", None, "int"),
     "assists": ("Vorlagen", None, "int"),
     "goal_contributions": ("Scorerpunkte", "Tore + Vorlagen", "int"),
@@ -109,6 +111,7 @@ COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "key_passes_90": ("Key Passes /90", "Key Pässe pro 90 Minuten", "float"),
     "shot_assists": ("Shot Assists", "Pässe die zu einem Abschluss führen", "int"),
     "assisted_shots": ("Vorlagen zu Schüssen", "Anzahl der von diesem Spieler vorbereiteten Schüsse", "int"),
+
     # Passspiel
     "passes_completed": ("Pässe erfolgreich", "Beim Mitspieler angekommene Pässe", "int"),
     "passes_attempted": ("Pässe gesamt", "Versuchte Pässe", "int"),
@@ -133,6 +136,7 @@ COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "deep_completions": ("Deep Completions", "Erfolgreiche Zuspiele nahe des Tores", "int"),
     "progressive_passes_received": ("Fortschrittliche Anspiele", "Pässe, die den Spieler deutlich voranbringen", "int"),
     "passes_received": ("Erhaltene Pässe", None, "int"),
+    
     # Ballbesitz & Dribbling
     "touches": ("Ballkontakte", None, "int"),
     "touches_def_pen_area": ("Kontakte eigener 16er", None, "int"),
