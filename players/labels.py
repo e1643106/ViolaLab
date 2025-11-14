@@ -963,6 +963,7 @@ PLAYER_INFO_FIELD_KEYS: list[str] = [
     "npxgxa_90",
 ]
 
+<<<<<<< ours
 PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
     (field, COLUMN_LABELS.get(field, (field, None, ""))[0])
     for field in _PLAYER_INFO_FIELD_KEYS
@@ -985,6 +986,12 @@ def _player_info_field_label(key: str) -> str:
 PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
     (key, _player_info_field_label(key)) for key in PLAYER_INFO_FIELD_KEYS
 ]
+=======
+# Backwards compatibility: older imports expected the private
+# `_PLAYER_INFO_FIELD_KEYS` name, so alias it to the new public constant to
+# avoid NameError crashes while the templates/views are reloaded.
+_PLAYER_INFO_FIELD_KEYS = PLAYER_INFO_FIELD_KEYS
+>>>>>>> theirs
 
 
 def _player_info_field_label(key: str) -> str:
@@ -992,7 +999,11 @@ def _player_info_field_label(key: str) -> str:
 
 
 PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
+<<<<<<< ours
     (key, _player_info_field_label(key)) for key in PLAYER_INFO_FIELD_KEYS
+=======
+    (key, _player_info_field_label(key)) for key in _PLAYER_INFO_FIELD_KEYS
+>>>>>>> theirs
 ]
 
 
