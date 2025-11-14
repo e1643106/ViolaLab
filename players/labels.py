@@ -1085,3 +1085,29 @@ PLAYER_NICHT: dict[str, tuple[str, str | None, str]] = {
     "team_id": ("Team-ID", None, "int"),
     "team_name": ("Team", None, "string"),
 }
+"""Backward-compatible wrapper around ``players.dashboard_labels``.
+
+Provides the same public constants that legacy imports expect, so older
+modules that still reference ``players.labels`` keep working while the
+new dashboard implementation lives in ``dashboard_labels``.
+"""
+
+from .dashboard_labels import (  # noqa: F401
+    CATEGORY_GROUPS,
+    CATEGORY_LABELS,
+    COLUMN_LABELS,
+    METRIC_CATEGORIES,
+    PLAYER_INFO_FIELDS,
+    POSITION_LABELS,
+    metric_definition,
+)
+
+__all__ = [
+    "CATEGORY_GROUPS",
+    "CATEGORY_LABELS",
+    "COLUMN_LABELS",
+    "METRIC_CATEGORIES",
+    "PLAYER_INFO_FIELDS",
+    "POSITION_LABELS",
+    "metric_definition",
+]

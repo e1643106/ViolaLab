@@ -1,7 +1,5 @@
 from django import template
 
-from players.labels import POSITION_LABELS
-
 from players.dashboard_labels import POSITION_LABELS
 
 register = template.Library()
