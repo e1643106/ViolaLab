@@ -38,6 +38,7 @@ class MatchRow:
 
 
 PLAYER_SEASON_TABLE = "player_season_data"
+PLAYER_MATCH_TABLE = "player_match_data"
 
 
 @lru_cache(maxsize=None)
@@ -57,6 +58,10 @@ def _table_columns(table_name: str) -> set[str]:
 
 def _has_psd_column(column: str) -> bool:
     return column.lower() in _table_columns(PLAYER_SEASON_TABLE)
+
+
+def _has_pmd_column(column: str) -> bool:
+    return column.lower() in _table_columns(PLAYER_MATCH_TABLE)
 
 
 def _position_select_columns(alias: str = "psd") -> list[str]:
@@ -187,6 +192,21 @@ def fetch_positions(
 ) -> list[str]:
     if competition_id is None or season_id is None:
         return []
+    cte_sql, params = _build_position_cte(competition_id, season_id)
+    if cte_sql:
+        rows = _fetch_dicts(
+            f"""
+            WITH {cte_sql}
+            SELECT DISTINCT
+                rp.position
+            FROM ranked_positions AS rp
+            WHERE rp.position IS NOT NULL
+            ORDER BY rp.position
+            """,
+            params,
+        )
+        return [str(row["position"]) for row in rows if row.get("position")]
+
     position_expr = _position_expression()
     if not position_expr:
         return []
@@ -254,6 +274,40 @@ def fetch_season_rows(
             )
         )
     return results
+
+
+def fetch_player_positions(
+    competition_id: int | None,
+    season_id: int | None,
+    player_ids: Sequence[int] | None = None,
+) -> dict[int, dict[str, str | None]]:
+    if (
+        competition_id is None
+        or season_id is None
+        or (player_ids is not None and not player_ids)
+    ):
+        return {}
+    cte_sql, params = _build_position_cte(competition_id, season_id, player_ids)
+    if not cte_sql:
+        return {}
+    rows = _fetch_dicts(
+        f"""
+        WITH {cte_sql}
+        SELECT
+            player_id,
+            primary_position,
+            secondary_position
+        FROM player_positions
+        """,
+        params,
+    )
+    lookup: dict[int, dict[str, str | None]] = {}
+    for row in rows:
+        lookup[int(row["player_id"])] = {
+            "primary_position": row.get("primary_position"),
+            "secondary_position": row.get("secondary_position"),
+        }
+    return lookup
 def fetch_match_rows(
     competition_id: int,
     season_id: int,
@@ -309,3 +363,59 @@ def _fetch_dicts(sql: str, params: Sequence[object] | None = None) -> list[dict[
         cursor.execute(sql, params or [])
         columns = [column[0].lower() for column in cursor.description]
         return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+def _build_position_cte(
+    competition_id: int | None,
+    season_id: int | None,
+    player_ids: Sequence[int] | None = None,
+) -> tuple[str, list[object]]:
+    if (
+        competition_id is None
+        or season_id is None
+        or not _has_pmd_column("position")
+    ):
+        return "", []
+    params: list[object] = [competition_id, season_id]
+    player_filter = ""
+    if player_ids:
+        placeholders = ", ".join(["%s"] * len(player_ids))
+        player_filter = f" AND pmd.player_id IN ({placeholders})"
+        params.extend(player_ids)
+    cte_sql = f"""
+    position_counts AS (
+        SELECT
+            pmd.player_id,
+            UPPER(LTRIM(RTRIM(pmd.position))) AS position,
+            COUNT(*) AS appearances
+        FROM {PLAYER_MATCH_TABLE} AS pmd
+        INNER JOIN matches AS m
+          ON m.match_id = pmd.match_id
+        WHERE m.competition_id = %s
+          AND m.season_id = %s
+          AND pmd.position IS NOT NULL
+          AND LTRIM(RTRIM(pmd.position)) <> ''
+          {player_filter}
+        GROUP BY pmd.player_id, UPPER(LTRIM(RTRIM(pmd.position)))
+    ),
+    ranked_positions AS (
+        SELECT
+            player_id,
+            position,
+            appearances,
+            ROW_NUMBER() OVER (
+                PARTITION BY player_id
+                ORDER BY appearances DESC, position
+            ) AS position_rank
+        FROM position_counts
+    ),
+    player_positions AS (
+        SELECT
+            player_id,
+            MAX(CASE WHEN position_rank = 1 THEN position END) AS primary_position,
+            MAX(CASE WHEN position_rank = 2 THEN position END) AS secondary_position
+        FROM ranked_positions
+        GROUP BY player_id
+    )
+    """
+    return cte_sql, params

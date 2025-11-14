@@ -13,21 +13,22 @@ from .data_access import (
     SeasonRow,
     fetch_competitions,
     fetch_match_rows,
+    fetch_player_positions,
     fetch_players,
     fetch_positions,
     fetch_season_rows,
 )
 from .labels import (
-    CATEGORY_GROUPS,
     CATEGORY_LABELS,
     COLUMN_LABELS,
-    METRIC_CATEGORIES,
+    MATCH_METRIC_CATEGORIES,
     PLAYER_INFO_FIELDS,
     POSITION_LABELS,
+    SEASON_METRIC_CATEGORIES,
     metric_definition,
 )
 
-SEASON_METRIC_KEYS: list[str] = [
+DEFAULT_SEASON_METRICS: list[str] = [
     "npg_90",
     "npxgxa_90",
     "shots_key_passes_90",
@@ -35,19 +36,13 @@ SEASON_METRIC_KEYS: list[str] = [
     "padj_pressures_90",
     "dribble_ratio",
 ]
-MATCH_METRIC_KEYS: list[str] = ["np_xg", "goals", "assists", "xgchain"]
+DEFAULT_MATCH_METRICS: list[str] = ["np_xg", "goals", "assists", "xgchain"]
 
 
 def _metric_tuple(metric: str) -> tuple[str, str, str]:
     label, _legend, fmt = metric_definition(metric)
     fmt_key = "percent" if fmt == "percent" else "number"
     return metric, label, fmt_key
-
-
-SEASON_METRICS: list[tuple[str, str, str]] = [_metric_tuple(metric) for metric in SEASON_METRIC_KEYS]
-MATCH_METRICS: list[tuple[str, str]] = [
-    (metric, metric_definition(metric)[0]) for metric in MATCH_METRIC_KEYS
-]
 
 
 @login_required
@@ -73,8 +68,20 @@ def dashboard(request):
     players = fetch_players(
         selected_competition_id,
         selected_season_id,
-        selected_position or None,
+        None,
     )
+    position_lookup = fetch_player_positions(
+        selected_competition_id,
+        selected_season_id,
+        [int(player["player_id"]) for player in players],
+    )
+    _annotate_player_positions(players, position_lookup)
+    if selected_position:
+        players = [
+            player
+            for player in players
+            if _player_matches_position(player, selected_position)
+        ]
 
     requested_players = request.GET.getlist("players")
     available_player_ids = [str(player["player_id"]) for player in players]
@@ -82,19 +89,41 @@ def dashboard(request):
         requested_players = available_player_ids[:2]
     selected_player_ids = [pid for pid in requested_players if pid in available_player_ids]
 
+    season_metric_options = _metric_category_payload(SEASON_METRIC_CATEGORIES)
+    match_metric_options = _metric_category_payload(MATCH_METRIC_CATEGORIES)
+
+    requested_season_metrics = request.GET.getlist("season_metrics")
+    requested_match_metrics = request.GET.getlist("match_metrics")
+    season_metric_keys = _resolve_metric_selection(
+        requested_season_metrics,
+        SEASON_METRIC_CATEGORIES,
+        DEFAULT_SEASON_METRICS,
+    )
+    match_metric_keys = _resolve_metric_selection(
+        requested_match_metrics,
+        MATCH_METRIC_CATEGORIES,
+        DEFAULT_MATCH_METRICS,
+    )
+    season_metrics = [_metric_tuple(metric) for metric in season_metric_keys]
+    match_metrics = [
+        (metric, metric_definition(metric)[0]) for metric in match_metric_keys
+    ]
+
     season_stats = _load_season_stats(
         selected_competition_id,
         selected_season_id,
         [int(pid) for pid in selected_player_ids],
+        season_metric_keys,
     )
     match_stats = _load_match_stats(
         selected_competition_id,
         selected_season_id,
         [int(pid) for pid in selected_player_ids],
+        match_metric_keys,
     )
 
-    season_chart = _build_season_chart_payload(season_stats)
-    match_chart = _build_match_chart_payload(match_stats)
+    season_chart = _build_season_chart_payload(season_stats, season_metrics)
+    match_chart = _build_match_chart_payload(match_stats, match_metrics)
 
     positions = [
         {
@@ -113,10 +142,18 @@ def dashboard(request):
         "selected_position": selected_position,
         "selected_players": selected_player_ids,
         "season_stats": season_stats,
-        "season_metrics": SEASON_METRICS,
-        "match_metrics": MATCH_METRICS,
-        "season_category_groups": _build_category_groups(SEASON_METRIC_KEYS),
-        "match_category_groups": _build_category_groups(MATCH_METRIC_KEYS),
+        "season_metrics": season_metrics,
+        "match_metrics": match_metrics,
+        "season_category_sections": _selected_metric_sections(
+            season_metric_keys, SEASON_METRIC_CATEGORIES
+        ),
+        "match_category_sections": _selected_metric_sections(
+            match_metric_keys, MATCH_METRIC_CATEGORIES
+        ),
+        "season_metric_options": season_metric_options,
+        "match_metric_options": match_metric_options,
+        "selected_season_metrics": season_metric_keys,
+        "selected_match_metrics": match_metric_keys,
         "player_info_fields": PLAYER_INFO_FIELDS,
         "selected_player_meta": selected_player_meta,
         "season_chart_json": json.dumps(season_chart, cls=DjangoJSONEncoder),
@@ -129,24 +166,36 @@ def _load_season_stats(
     competition_id: int | None,
     season_id: int | None,
     player_ids: Iterable[int],
+    metrics: Sequence[str],
 ):
     if (
         competition_id is None
         or season_id is None
         or not player_ids
+        or not metrics
     ):
         return []
 
-    season_metrics = [metric for metric, _, _ in SEASON_METRICS]
+    metric_list = list(metrics)
+    player_ids_list = list(player_ids)
     rows = fetch_season_rows(
         competition_id=int(competition_id),
         season_id=int(season_id),
-        player_ids=list(player_ids),
-        metrics=season_metrics,
+        player_ids=player_ids_list,
+        metrics=metric_list,
     )
 
+    positions = fetch_player_positions(
+        competition_id,
+        season_id,
+        player_ids_list,
+    )
     for row in rows:
-        row.metrics = {metric: row.metrics.get(metric) for metric in season_metrics}
+        row.metrics = {metric: row.metrics.get(metric) for metric in metric_list}
+        lookup = positions.get(row.player_id)
+        if lookup:
+            row.primary_position = lookup.get("primary_position") or row.primary_position
+            row.secondary_position = lookup.get("secondary_position") or row.secondary_position
     return rows
 
 
@@ -154,29 +203,34 @@ def _load_match_stats(
     competition_id: int | None,
     season_id: int | None,
     player_ids: Iterable[int],
+    metrics: Sequence[str],
 ):
     if (
         competition_id is None
         or season_id is None
         or not player_ids
+        or not metrics
     ):
         return []
 
-    match_metrics = [metric for metric, _ in MATCH_METRICS]
+    metric_list = list(metrics)
     rows = fetch_match_rows(
         competition_id=int(competition_id),
         season_id=int(season_id),
         player_ids=list(player_ids),
-        metrics=match_metrics,
+        metrics=metric_list,
     )
     for row in rows:
-        row.metrics = {metric: row.metrics.get(metric) for metric in match_metrics}
+        row.metrics = {metric: row.metrics.get(metric) for metric in metric_list}
     return rows
 
 
-def _build_season_chart_payload(season_stats: Sequence[SeasonRow]):
-    labels = [label for _, label, _ in SEASON_METRICS]
-    formats = [fmt for _, _, fmt in SEASON_METRICS]
+def _build_season_chart_payload(
+    season_stats: Sequence[SeasonRow],
+    season_metrics: Sequence[tuple[str, str, str]],
+):
+    labels = [label for _, label, _ in season_metrics]
+    formats = [fmt for _, _, fmt in season_metrics]
     datasets = []
     for stat in season_stats:
         datasets.append(
@@ -184,21 +238,24 @@ def _build_season_chart_payload(season_stats: Sequence[SeasonRow]):
                 "label": stat.player_name or f"Player {stat.player_id}",
                 "data": [
                     _chart_value(getattr(stat, metric))
-                    for metric, _, _ in SEASON_METRICS
+                    for metric, _, _ in season_metrics
                 ],
             }
         )
     return {"labels": labels, "datasets": datasets, "formats": formats}
 
 
-def _build_match_chart_payload(match_stats: Sequence[MatchRow]):
+def _build_match_chart_payload(
+    match_stats: Sequence[MatchRow],
+    match_metrics: Sequence[tuple[str, str]],
+):
     if not match_stats:
         return {"labels": [], "metrics": {}, "players": []}
 
     dates = sorted({stat.match_date for stat in match_stats if stat.match_date})
     labels = [date.strftime("%Y-%m-%d") for date in dates]
     metric_values: dict[str, dict[int, dict[str, float | None]]] = {
-        metric: defaultdict(dict) for metric, _ in MATCH_METRICS
+        metric: defaultdict(dict) for metric, _ in match_metrics
     }
     player_names: dict[int, str] = {}
 
@@ -207,13 +264,13 @@ def _build_match_chart_payload(match_stats: Sequence[MatchRow]):
         if not date or date not in dates:
             continue
         player_names[stat.player_id] = stat.player_name or f"Player {stat.player_id}"
-        for metric, _ in MATCH_METRICS:
+        for metric, _ in match_metrics:
             metric_values[metric][stat.player_id][date.strftime("%Y-%m-%d")] = _chart_value(
                 getattr(stat, metric)
             )
 
     metric_payload = {}
-    for metric, label in MATCH_METRICS:
+    for metric, label in match_metrics:
         datasets = []
         for player_id in sorted(player_names, key=lambda pid: player_names[pid]):
             player_name = player_names[player_id]
@@ -228,63 +285,98 @@ def _build_match_chart_payload(match_stats: Sequence[MatchRow]):
     return {"labels": labels, "metrics": metric_payload, "players": list(player_names.values())}
 
 
-def _build_category_groups(metric_keys: Sequence[str]):
-    metric_set = set(metric_keys)
-    groups: list[dict[str, object]] = []
-
-    seen_categories: set[str] = set()
-    for group_label, categories in CATEGORY_GROUPS:
-        group_categories = []
-        for category in categories:
-            seen_categories.add(category)
-            metrics = [
-                {
-                    "key": metric,
-                    "label": COLUMN_LABELS.get(metric, (metric, None, "float"))[0],
-                    "legend": COLUMN_LABELS.get(metric, (metric, None, "float"))[1],
-                }
-                for metric in METRIC_CATEGORIES.get(category, [])
-                if metric in metric_set
-            ]
-            if metrics:
-                group_categories.append(
+def _metric_category_payload(metric_categories: dict[str, Sequence[str]]):
+    payload: list[dict[str, object]] = []
+    for category, metrics in metric_categories.items():
+        payload.append(
+            {
+                "key": category,
+                "label": CATEGORY_LABELS.get(category, category),
+                "metrics": [
                     {
-                        "key": category,
-                        "label": CATEGORY_LABELS.get(category, category),
-                        "metrics": metrics,
+                        "key": metric,
+                        "label": COLUMN_LABELS.get(metric, (metric, None, "float"))[0],
+                        "legend": COLUMN_LABELS.get(metric, (metric, None, "float"))[1],
                     }
-                )
-        if group_categories:
-            groups.append({"label": group_label, "categories": group_categories})
+                    for metric in metrics
+                ],
+            }
+        )
+    return payload
 
-    extra_categories = [
-        category for category in METRIC_CATEGORIES.keys() if category not in seen_categories
-    ]
-    for category in extra_categories:
-        metrics = [
+
+def _selected_metric_sections(
+    metric_keys: Sequence[str], metric_categories: dict[str, Sequence[str]]
+):
+    metric_set = set(metric_keys)
+    sections: list[dict[str, object]] = []
+    for category, metrics in metric_categories.items():
+        visible_metrics = [
             {
                 "key": metric,
                 "label": COLUMN_LABELS.get(metric, (metric, None, "float"))[0],
                 "legend": COLUMN_LABELS.get(metric, (metric, None, "float"))[1],
             }
-            for metric in METRIC_CATEGORIES.get(category, [])
+            for metric in metrics
             if metric in metric_set
         ]
-        if metrics:
-            groups.append(
+        if visible_metrics:
+            sections.append(
                 {
+                    "key": category,
                     "label": CATEGORY_LABELS.get(category, category),
-                    "categories": [
-                        {
-                            "key": category,
-                            "label": CATEGORY_LABELS.get(category, category),
-                            "metrics": metrics,
-                        }
-                    ],
+                    "metrics": visible_metrics,
                 }
             )
+    return sections
 
-    return groups
+
+def _resolve_metric_selection(
+    requested: Sequence[str],
+    metric_categories: dict[str, Sequence[str]],
+    default: Sequence[str],
+) -> list[str]:
+    allowed = _all_metric_keys(metric_categories)
+    valid = [metric for metric in requested if metric in allowed]
+    if not valid:
+        fallback = [metric for metric in default if metric in allowed]
+        valid = fallback or allowed[:6]
+    return valid
+
+
+def _all_metric_keys(metric_categories: dict[str, Sequence[str]]) -> list[str]:
+    keys: list[str] = []
+    for metrics in metric_categories.values():
+        keys.extend(metrics)
+    return keys
+
+
+def _annotate_player_positions(
+    players: list[dict[str, object]],
+    lookup: dict[int, dict[str, str | None]],
+):
+    if not lookup:
+        return
+    for player in players:
+        player_id = player.get("player_id")
+        try:
+            player_id_int = int(player_id)
+        except (TypeError, ValueError):
+            continue
+        positions = lookup.get(player_id_int)
+        if not positions:
+            continue
+        player["primary_position"] = positions.get("primary_position")
+        player["secondary_position"] = positions.get("secondary_position")
+
+
+def _player_matches_position(player: dict[str, object], position: str) -> bool:
+    if not position:
+        return True
+    position_upper = position.upper()
+    primary = (player.get("primary_position") or "").upper()
+    secondary = (player.get("secondary_position") or "").upper()
+    return position_upper in {primary, secondary}
 
 
 def _selected_player_meta(players: list[dict[str, object]], selected_ids: Sequence[str]):

@@ -12,6 +12,9 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
+    .filter-grid .full-span {
+      grid-column: 1 / -1;
+    }
     .chart-card + .chart-card {
       margin-top: 1.5rem;
     }
@@ -33,6 +36,43 @@
     }
     .metric-label {
       font-weight: 600;
+      display: block;
+    }
+    .metrics-accordion details {
+      border: 1px solid var(--bs-border-color);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      background-color: var(--bs-body-bg);
+    }
+    .metrics-accordion details + details {
+      margin-top: 0.75rem;
+    }
+    .metrics-accordion summary {
+      cursor: pointer;
+      font-weight: 600;
+      list-style: none;
+    }
+    .metrics-accordion summary::-webkit-details-marker {
+      display: none;
+    }
+    .metrics-accordion summary::after {
+      content: "▾";
+      float: right;
+      transition: transform 0.2s ease;
+    }
+    .metrics-accordion details[open] summary::after {
+      transform: rotate(180deg);
+    }
+    .metric-checkbox-grid {
+      margin-top: 0.75rem;
+      display: grid;
+      gap: 0.5rem 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .metric-checkbox .metric-label {
+      font-weight: 500;
+    }
+    .metric-checkbox small {
       display: block;
     }
   </style>
@@ -80,6 +120,67 @@
           {% endfor %}
         </select>
         <small class="text-muted">Mehrfachauswahl mit Strg/Cmd möglich.</small>
+      </div>
+      <div class="full-span">
+        <label class="form-label">Season-Metriken</label>
+        <p class="text-muted small mb-2">Wähle die Kennzahlen aus, die in der Saison-Tabelle und im Radar angezeigt werden sollen.</p>
+        <div class="metrics-accordion">
+          {% for category in season_metric_options %}
+            <details class="metric-panel" {% if forloop.first %}open{% endif %}>
+              <summary>{{ category.label }}</summary>
+              <div class="metric-checkbox-grid">
+                {% for metric in category.metrics %}
+                  <label class="form-check metric-checkbox">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="season_metrics"
+                      value="{{ metric.key }}"
+                      {% if metric.key in selected_season_metrics %}checked{% endif %}
+                    />
+                    <span class="form-check-label">
+                      <span class="metric-label">{{ metric.label }}</span>
+                      {% if metric.legend %}
+                        <small class="text-muted">{{ metric.legend }}</small>
+                      {% endif %}
+                    </span>
+                  </label>
+                {% endfor %}
+              </div>
+            </details>
+          {% endfor %}
+        </div>
+        <small class="text-muted">Mindestens eine Kennzahl auswählen.</small>
+      </div>
+      <div class="full-span">
+        <label class="form-label">Match-Metriken</label>
+        <p class="text-muted small mb-2">Bestimme, welche Match-Kennzahlen in den Verlaufsgrafiken erscheinen.</p>
+        <div class="metrics-accordion">
+          {% for category in match_metric_options %}
+            <details class="metric-panel" {% if forloop.first %}open{% endif %}>
+              <summary>{{ category.label }}</summary>
+              <div class="metric-checkbox-grid">
+                {% for metric in category.metrics %}
+                  <label class="form-check metric-checkbox">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="match_metrics"
+                      value="{{ metric.key }}"
+                      {% if metric.key in selected_match_metrics %}checked{% endif %}
+                    />
+                    <span class="form-check-label">
+                      <span class="metric-label">{{ metric.label }}</span>
+                      {% if metric.legend %}
+                        <small class="text-muted">{{ metric.legend }}</small>
+                      {% endif %}
+                    </span>
+                  </label>
+                {% endfor %}
+              </div>
+            </details>
+          {% endfor %}
+        </div>
       </div>
     </div>
     <div class="card-footer text-end">
@@ -186,50 +287,42 @@
               <div class="metric-groups">
                 <div class="metric-group">
                   <div class="text-uppercase text-muted small mb-2">Saison</div>
-                  {% for group in season_category_groups %}
-                    <div class="metric-category">
-                      <div class="fw-semibold mb-1">{{ group.label }}</div>
-                      {% for category in group.categories %}
-                        <div class="mb-2">
-                          <div class="text-muted small text-uppercase">{{ category.label }}</div>
-                          <ul class="list-unstyled small mb-0">
-                            {% for metric in category.metrics %}
-                              <li>
-                                <span class="metric-label">{{ metric.label }}</span>
-                                {% if metric.legend %}
-                                  <span class="text-muted">{{ metric.legend }}</span>
-                                {% endif %}
-                              </li>
-                            {% endfor %}
-                          </ul>
-                        </div>
-                      {% endfor %}
+                  {% for category in season_category_sections %}
+                    <div class="metric-category mb-3">
+                      <div class="fw-semibold mb-1">{{ category.label }}</div>
+                      <ul class="list-unstyled small mb-0">
+                        {% for metric in category.metrics %}
+                          <li>
+                            <span class="metric-label">{{ metric.label }}</span>
+                            {% if metric.legend %}
+                              <span class="text-muted">{{ metric.legend }}</span>
+                            {% endif %}
+                          </li>
+                        {% endfor %}
+                      </ul>
                     </div>
+                  {% empty %}
+                    <p class="text-muted small mb-0">Keine Saison-Metriken ausgewählt.</p>
                   {% endfor %}
                 </div>
                 <div class="metric-group">
                   <div class="text-uppercase text-muted small mb-2">Match</div>
-                  {% for group in match_category_groups %}
-                    <div class="metric-category">
-                      <div class="fw-semibold mb-1">{{ group.label }}</div>
-                      {% for category in group.categories %}
-                        <div class="mb-2">
-                          <div class="text-muted small text-uppercase">{{ category.label }}</div>
-                          <ul class="list-unstyled small mb-0">
-                            {% for metric in category.metrics %}
-                              <li>
-                                <span class="metric-label">{{ metric.label }}</span>
-                                {% if metric.legend %}
-                                  <span class="text-muted">{{ metric.legend }}</span>
-                                {% endif %}
-                              </li>
-                            {% endfor %}
-                          </ul>
-                        </div>
-                      {% endfor %}
+                  {% for category in match_category_sections %}
+                    <div class="metric-category mb-3">
+                      <div class="fw-semibold mb-1">{{ category.label }}</div>
+                      <ul class="list-unstyled small mb-0">
+                        {% for metric in category.metrics %}
+                          <li>
+                            <span class="metric-label">{{ metric.label }}</span>
+                            {% if metric.legend %}
+                              <span class="text-muted">{{ metric.legend }}</span>
+                            {% endif %}
+                          </li>
+                        {% endfor %}
+                      </ul>
                     </div>
                   {% empty %}
-                    <p class="text-muted small mb-0">Keine Match-Kategorien verfügbar.</p>
+                    <p class="text-muted small mb-0">Keine Match-Metriken ausgewählt.</p>
                   {% endfor %}
                 </div>
               </div>
