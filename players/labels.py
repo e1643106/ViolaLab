@@ -1,4 +1,5 @@
 
+
 from __future__ import annotations
 
 import re
@@ -353,6 +354,48 @@ SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "90s_played": (
         "Absolvierte 90er",
         "Anzahl gespielter 90-Minuten-Einheiten",
+
+"""Label- und Kategorie-Metadaten für die Players-App."""
+
+from __future__ import annotations
+
+from collections import OrderedDict
+
+
+# ---------------------------------------------------------------------------
+# Spaltenlabels / Formate
+# ---------------------------------------------------------------------------
+
+COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
+    "player_name": ("Spieler", None, "string"),
+    "team_name": ("Team", None, "string"),
+    "primary_position": ("Position", "Primäre Positionsgruppe", "string"),
+    "secondary_position": ("Sek. Position", "Alternative Positionsgruppe", "string"),
+    "npg_90": ("NP Goals / 90", "Nicht-Elfmeter-Tore pro 90 Minuten", "float"),
+    "npxgxa_90": ("NP xG+xA / 90", "Nicht-Elfmeter xG + xA pro 90 Minuten", "float"),
+    "shots_key_passes_90": (
+        "Shots + Key Passes / 90",
+        "Schüsse plus vorletzte Pässe pro 90 Minuten",
+        "float",
+    ),
+    "carries_90": ("Carries / 90", "Ballführungen pro 90 Minuten", "float"),
+    "padj_pressures_90": (
+        "Pressures (adj.) / 90",
+        "Positions-adjustierte Pressures pro 90 Minuten",
+        "float",
+    ),
+    "dribble_ratio": (
+        "Dribble Ratio",
+        "Anteil erfolgreicher Dribblings (in %)",
+        "percent",
+    ),
+    "np_xg": ("NP xG", "Nicht-Elfmeter Expected Goals pro Partie", "float"),
+    "goals": ("Goals", "Tore in den ausgewählten Matches", "int"),
+    "assists": ("Assists", "Assists in den ausgewählten Matches", "int"),
+    "xgchain": (
+        "xGChain",
+        "xG-Beteiligung im Ballbesitz (OBV-ähnliche Kennzahl)",
+
         "float",
     ),
 }
