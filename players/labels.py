@@ -14,6 +14,17 @@ SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "team_name": ("Team", None, "string"),
     "primary_position": ("Position", "Primäre Positionsgruppe", "string"),
     "secondary_position": ("Sek. Position", "Alternative Positionsgruppe", "string"),
+    "appearances": ("Einsätze", "Anzahl der Einsätze", "int"),
+    "starting_appearances": (
+        "Startelf-Einsätze",
+        "Partien in der Startelf",
+        "int",
+    ),
+    "90s_played": (
+        "90s",
+        "Anzahl der 90-Minuten-Äquivalente",
+        "float",
+    ),
     "npg_90": ("NP Goals / 90", "Nicht-Elfmeter-Tore pro 90 Minuten", "float"),
     "npxgxa_90": ("NP xG+xA / 90", "Nicht-Elfmeter xG + xA pro 90 Minuten", "float"),
     "shots_key_passes_90": (
@@ -713,13 +724,21 @@ METRIC_NICHT: dict[str, tuple[str | None, str | None, str | None]] = {
 }
 
 
-PLAYER_INFO_FIELDS: list[str] = [
+# Reihenfolge der anzuzeigenden Spieler-Infos. Aus Gründen der Darstellung
+# benötigt das Template jeweils Feldname und Beschriftung, daher erzeugen wir
+# hier direkt ein (key, label)-Tuple aus den Spaltenmetadaten.
+_PLAYER_INFO_FIELD_KEYS = [
     "team_name",
     "appearances",
     "starting_appearances",
     "90s_played",
     "npg_90",
     "npxgxa_90",
+]
+
+PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
+    (field, COLUMN_LABELS.get(field, (field, None, ""))[0])
+    for field in _PLAYER_INFO_FIELD_KEYS
 ]
 
 
