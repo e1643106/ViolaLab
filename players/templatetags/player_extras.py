@@ -1,10 +1,6 @@
 from django import template
 
-<<<<<<< ours
-from players.dashboard_labels import POSITION_LABELS
-=======
 from players.labels import POSITION_LABELS
->>>>>>> theirs
 
 register = template.Library()
 

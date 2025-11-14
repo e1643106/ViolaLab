@@ -148,15 +148,6 @@ def fetch_players(
     params: list[object] = [competition_id, season_id]
     position_filter = ""
     if position:
-<<<<<<< ours
-        position_filter = """
-          AND (
-                psd.primary_position = %s
-             OR psd.secondary_position = %s
-          )
-        """
-        params.extend([position, position])
-=======
         clauses: list[str] = []
         if _has_psd_column("primary_position"):
             clauses.append("psd.primary_position = %s")
@@ -170,7 +161,6 @@ def fetch_players(
         """
             params.extend([position] * len(clauses))
     position_select_sql = ",\n            ".join(_position_select_columns())
->>>>>>> theirs
     rows = _fetch_dicts(
         f"""
         SELECT DISTINCT
@@ -178,12 +168,7 @@ def fetch_players(
             COALESCE(pl.player_name, CONCAT('Player ', psd.player_id)) AS player_name,
             psd.team_id,
             psd.team_name,
-<<<<<<< ours
-            psd.primary_position,
-            psd.secondary_position
-=======
             {position_select_sql}
->>>>>>> theirs
         FROM player_season_data AS psd
         LEFT JOIN players AS pl
           ON pl.player_id = psd.player_id
@@ -202,15 +187,6 @@ def fetch_positions(
 ) -> list[str]:
     if competition_id is None or season_id is None:
         return []
-<<<<<<< ours
-    rows = _fetch_dicts(
-        """
-        SELECT DISTINCT
-            COALESCE(
-                NULLIF(LTRIM(RTRIM(psd.primary_position)), ''),
-                NULLIF(LTRIM(RTRIM(psd.secondary_position)), '')
-            ) AS position
-=======
     position_expr = _position_expression()
     if not position_expr:
         return []
@@ -218,7 +194,6 @@ def fetch_positions(
         f"""
         SELECT DISTINCT
             {position_expr} AS position
->>>>>>> theirs
         FROM player_season_data AS psd
         WHERE psd.competition_id = %s
           AND psd.season_id = %s
@@ -235,10 +210,6 @@ def fetch_season_rows(
     team_id: int | None = None,
 ) -> list[SeasonRow]:
     placeholders = ", ".join(["%s"] * len(player_ids))
-<<<<<<< ours
-    metric_sql = ",\n            ".join(f"psd.{metric} AS {metric}" for metric in metrics)
-=======
->>>>>>> theirs
     where_clauses = [
         "psd.competition_id = %s",
         "psd.season_id = %s",
@@ -249,17 +220,6 @@ def fetch_season_rows(
         where_clauses.insert(2, "psd.team_id = %s")
         params.append(team_id)
     params.extend(player_ids)
-<<<<<<< ours
-    rows = _fetch_dicts(
-        f"""
-        SELECT
-            psd.player_id,
-            COALESCE(pl.player_name, CONCAT('Player ', psd.player_id)) AS player_name,
-            psd.team_name,
-            psd.primary_position,
-            psd.secondary_position,
-            {metric_sql}
-=======
     select_fields = [
         "psd.player_id",
         "COALESCE(pl.player_name, CONCAT('Player ', psd.player_id)) AS player_name",
@@ -272,7 +232,6 @@ def fetch_season_rows(
         f"""
         SELECT
             {select_clause}
->>>>>>> theirs
         FROM player_season_data AS psd
         LEFT JOIN players AS pl
           ON pl.player_id = psd.player_id
