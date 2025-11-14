@@ -1,6 +1,11 @@
 from django import template
 
-from players.labels import POSITION_LABELS
+try:  # pragma: no cover - defensive fallback for template import time
+    from players.labels import POSITION_LABELS as _POSITION_LABELS
+except Exception:  # noqa: BLE001 - we must not break template loading
+    _POSITION_LABELS: dict[str, str] = {}
+
+POSITION_LABELS = _POSITION_LABELS
 
 register = template.Library()
 

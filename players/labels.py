@@ -987,6 +987,15 @@ PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
 ]
 
 
+def _player_info_field_label(key: str) -> str:
+    return COLUMN_LABELS.get(key, (key, None, "string"))[0]
+
+
+PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
+    (key, _player_info_field_label(key)) for key in PLAYER_INFO_FIELD_KEYS
+]
+
+
 PLAYER_NICHT: dict[str, tuple[str, str | None, str]] = {
     "match_id": ("Match-ID", "Eindeutige Kennung des Spiels", "int"),
     "match_date": ("Spieltermin", None, "date"),
