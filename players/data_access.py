@@ -196,7 +196,7 @@ def fetch_positions(
     if cte_sql:
         rows = _fetch_dicts(
             f"""
-            WITH {cte_sql}
+            ;WITH {cte_sql}
             SELECT DISTINCT
                 rp.position
             FROM ranked_positions AS rp
@@ -292,7 +292,11 @@ def fetch_player_positions(
         return {}
     rows = _fetch_dicts(
         f"""
+<<<<<<< ours
         WITH {cte_sql}
+=======
+        ;WITH {cte_sql}
+>>>>>>> theirs
         SELECT
             player_id,
             primary_position,
