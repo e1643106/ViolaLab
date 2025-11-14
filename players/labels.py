@@ -9,7 +9,7 @@ from collections import OrderedDict
 # Spaltenlabels / Formate
 # ---------------------------------------------------------------------------
 
-COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
+SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "player_name": ("Spieler", None, "string"),
     "team_name": ("Team", None, "string"),
     "primary_position": ("Position", "Primäre Positionsgruppe", "string"),
