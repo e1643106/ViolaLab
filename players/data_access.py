@@ -308,7 +308,6 @@ def fetch_player_positions(
             "secondary_position": row.get("secondary_position"),
         }
     return lookup
-
 def fetch_match_rows(
     competition_id: int,
     season_id: int,

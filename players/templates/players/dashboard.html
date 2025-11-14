@@ -126,7 +126,7 @@
         <p class="text-muted small mb-2">Wähle die Kennzahlen aus, die in der Saison-Tabelle und im Radar angezeigt werden sollen.</p>
         <div class="metrics-accordion">
           {% for category in season_metric_options %}
-            <details class="metric-panel" {% if forloop.first %}open{% endif %}>
+            <details class="metric-panel" open>
               <summary>{{ category.label }}</summary>
               <div class="metric-checkbox-grid">
                 {% for metric in category.metrics %}
@@ -157,7 +157,7 @@
         <p class="text-muted small mb-2">Bestimme, welche Match-Kennzahlen in den Verlaufsgrafiken erscheinen.</p>
         <div class="metrics-accordion">
           {% for category in match_metric_options %}
-            <details class="metric-panel" {% if forloop.first %}open{% endif %}>
+            <details class="metric-panel" open>
               <summary>{{ category.label }}</summary>
               <div class="metric-checkbox-grid">
                 {% for metric in category.metrics %}

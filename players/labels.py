@@ -10,9 +10,6 @@ from collections import OrderedDict
 # ---------------------------------------------------------------------------
 
 SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
-    "appearances": ("Einsätze", "Anzahl der gespielten Partien", "int"),
-    "starting_appearances": ("Startelf-Einsätze", "Anzahl der Partien als Starter", "int"),
-    "90s_played": ("90s gespielt", "Anzahl der gespielten 90-Minuten-Einheiten", "float"),
     "player_name": ("Spieler", None, "string"),
     "team_name": ("Team", None, "string"),
     "primary_position": ("Position", "Primäre Positionsgruppe", "string"),
@@ -511,7 +508,7 @@ SEASON_METRIC_CATEGORIES: dict[str, list[str]] = {
         "p_pass_length",
         "ps_pass_length",
         "average_x_pass",
-        "positive_outcome_90"
+        "positive_outcome_90",
     ],
     "possession": [
         "carries_90",
@@ -732,29 +729,54 @@ PLAYER_NICHT: dict[str, tuple[str, str | None, str]] = {
     "team_id": ("Team-ID", None, "int"),
     "team_name": ("Team", None, "string"),
 }
-"""Backward-compatible wrapper around ``players.dashboard_labels``.
+CATEGORY_GROUPS: list[tuple[str, list[str]]] = [
+    ("Saisonmetriken", list(SEASON_METRIC_CATEGORIES.keys())),
+    ("Matchmetriken", list(MATCH_METRIC_CATEGORIES.keys())),
+]
 
-Provides the same public constants that legacy imports expect, so older
-modules that still reference ``players.labels`` keep working while the
-new dashboard implementation lives in ``dashboard_labels``.
-"""
 
-from .dashboard_labels import (  # noqa: F401
-    CATEGORY_GROUPS,
-    CATEGORY_LABELS,
-    COLUMN_LABELS,
-    METRIC_CATEGORIES,
-    PLAYER_INFO_FIELDS,
-    POSITION_LABELS,
-    metric_definition,
-)
+POSITION_LABELS: dict[str, str] = {
+    "GK": "Torwart (GK)",
+    "DF": "Verteidigung (DF)",
+    "FB": "Außenverteidigung (FB)",
+    "WB": "Wingback (WB)",
+    "DM": "Defensives Mittelfeld (DM)",
+    "CM": "Zentrales Mittelfeld (CM)",
+    "AM": "Offensives Mittelfeld (AM)",
+    "WM": "Flügel (WM)",
+    "FW": "Angriff (FW)",
+    "ST": "Stürmer (ST)",
+}
+
+
+def _merge_metric_categories() -> OrderedDict[str, list[str]]:
+    merged: OrderedDict[str, list[str]] = OrderedDict()
+    for source in (SEASON_METRIC_CATEGORIES, MATCH_METRIC_CATEGORIES):
+        for key, metrics in source.items():
+            bucket = merged.setdefault(key, [])
+            for metric in metrics:
+                if metric not in bucket:
+                    bucket.append(metric)
+    return merged
+
+
+METRIC_CATEGORIES: OrderedDict[str, list[str]] = _merge_metric_categories()
+
+
+def metric_definition(metric: str) -> tuple[str, str | None, str]:
+    """Return label/legend/format triple for *metric*."""
+
+    return COLUMN_LABELS.get(metric, (metric, None, "float"))
+
 
 __all__ = [
     "CATEGORY_GROUPS",
     "CATEGORY_LABELS",
     "COLUMN_LABELS",
+    "MATCH_METRIC_CATEGORIES",
     "METRIC_CATEGORIES",
     "PLAYER_INFO_FIELDS",
     "POSITION_LABELS",
+    "SEASON_METRIC_CATEGORIES",
     "metric_definition",
 ]
