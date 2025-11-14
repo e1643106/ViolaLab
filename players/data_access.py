@@ -292,11 +292,7 @@ def fetch_player_positions(
         return {}
     rows = _fetch_dicts(
         f"""
-<<<<<<< ours
-        WITH {cte_sql}
-=======
         ;WITH {cte_sql}
->>>>>>> theirs
         SELECT
             player_id,
             primary_position,
@@ -312,6 +308,7 @@ def fetch_player_positions(
             "secondary_position": row.get("secondary_position"),
         }
     return lookup
+
 def fetch_match_rows(
     competition_id: int,
     season_id: int,
@@ -387,11 +384,10 @@ def _build_position_cte(
         player_filter = f" AND pmd.player_id IN ({placeholders})"
         params.extend(player_ids)
     cte_sql = f"""
-    position_counts AS (
+    base_positions AS (
         SELECT
             pmd.player_id,
-            UPPER(LTRIM(RTRIM(pmd.position))) AS position,
-            COUNT(*) AS appearances
+            UPPER(LTRIM(RTRIM(pmd.position))) AS position
         FROM {PLAYER_MATCH_TABLE} AS pmd
         INNER JOIN matches AS m
           ON m.match_id = pmd.match_id
@@ -400,10 +396,18 @@ def _build_position_cte(
           AND pmd.position IS NOT NULL
           AND LTRIM(RTRIM(pmd.position)) <> ''
           {player_filter}
-        GROUP BY pmd.player_id, UPPER(LTRIM(RTRIM(pmd.position)))
+    ),
+    counted_positions AS (
+        SELECT
+            player_id,
+            position,
+            COUNT(*) OVER (
+                PARTITION BY player_id, position
+            ) AS appearances
+        FROM base_positions
     ),
     ranked_positions AS (
-        SELECT
+        SELECT DISTINCT
             player_id,
             position,
             appearances,
@@ -411,15 +415,16 @@ def _build_position_cte(
                 PARTITION BY player_id
                 ORDER BY appearances DESC, position
             ) AS position_rank
-        FROM position_counts
+        FROM counted_positions
     ),
     player_positions AS (
-        SELECT
+        SELECT DISTINCT
             player_id,
-            MAX(CASE WHEN position_rank = 1 THEN position END) AS primary_position,
-            MAX(CASE WHEN position_rank = 2 THEN position END) AS secondary_position
+            MAX(CASE WHEN position_rank = 1 THEN position END)
+                OVER (PARTITION BY player_id) AS primary_position,
+            MAX(CASE WHEN position_rank = 2 THEN position END)
+                OVER (PARTITION BY player_id) AS secondary_position
         FROM ranked_positions
-        GROUP BY player_id
     )
     """
     return cte_sql, params

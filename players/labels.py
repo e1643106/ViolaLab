@@ -10,6 +10,9 @@ from collections import OrderedDict
 # ---------------------------------------------------------------------------
 
 SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
+    "appearances": ("Einsätze", "Anzahl der gespielten Partien", "int"),
+    "starting_appearances": ("Startelf-Einsätze", "Anzahl der Partien als Starter", "int"),
+    "90s_played": ("90s gespielt", "Anzahl der gespielten 90-Minuten-Einheiten", "float"),
     "player_name": ("Spieler", None, "string"),
     "team_name": ("Team", None, "string"),
     "primary_position": ("Position", "Primäre Positionsgruppe", "string"),
@@ -21,6 +24,7 @@ SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
         "Schüsse plus vorletzte Pässe pro 90 Minuten",
         "float",
     ),
+    "positive_outcome_90": ("Positive Outcomes / 90", "Eine Ballbesitzphase die mit dem Spieler verbunden war, resultierend mit einem Torabschluss, Freistoß in F2 oder Corner", "float"),
     "carries_90": ("Carries / 90", "Ballführungen pro 90 Minuten", "float"),
     "padj_pressures_90": (
         "Pressures (adj.) / 90",
@@ -482,7 +486,6 @@ SEASON_METRIC_CATEGORIES: dict[str, list[str]] = {
         "appearances",
         "starting_appearances",
         "90s_played",
-        "positive_outcome_90",
     ],
     "shooting": [
         "npg_90",
@@ -508,6 +511,7 @@ SEASON_METRIC_CATEGORIES: dict[str, list[str]] = {
         "p_pass_length",
         "ps_pass_length",
         "average_x_pass",
+        "positive_outcome_90"
     ],
     "possession": [
         "carries_90",
