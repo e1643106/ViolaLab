@@ -17,12 +17,12 @@ SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
     "appearances": ("Einsätze", "Anzahl der Einsätze", "int"),
     "starting_appearances": (
         "Startelf-Einsätze",
-        "Partien in der Startelf",
+        "Anzahl der Spiele in der Startelf",
         "int",
     ),
     "90s_played": (
-        "90s",
-        "Anzahl der 90-Minuten-Äquivalente",
+        "90s gespielt",
+        "Gesammelte Einsatzminuten geteilt durch 90",
         "float",
     ),
     "npg_90": ("NP Goals / 90", "Nicht-Elfmeter-Tore pro 90 Minuten", "float"),
@@ -39,6 +39,16 @@ SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
         "Positions-adjustierte Pressures pro 90 Minuten",
         "float",
     ),
+    "shot_on_target_ratio": (
+        "Schüsse aufs Tor %",
+        "Anteil der Abschlüsse, die aufs Tor gehen",
+        "percent",
+    ),
+    "conversion_ratio": (
+        "Conversion %",
+        "Anteil der Abschlüsse, die zu Toren werden",
+        "percent",
+    ),
     "dribble_ratio": (
         "Dribble Ratio",
         "Anteil erfolgreicher Dribblings (in %)",
@@ -51,6 +61,226 @@ SEASON_COLUMN_LABELS: dict[str, tuple[str, str | None, str]] = {
         "xGChain",
         "xG-Beteiligung im Ballbesitz (OBV-ähnliche Kennzahl)",
 
+        "float",
+    ),
+    "backward_pass_proportion": (
+        "Rückpass-Anteil",
+        "Anteil der nach hinten gespielten Pässe",
+        "percent",
+    ),
+    "sideways_pass_proportion": (
+        "Querpässe-Anteil",
+        "Anteil der seitlich gespielten Pässe",
+        "percent",
+    ),
+    "op_f3_forward_pass_proportion": (
+        "Vorwärtspässe F3 %",
+        "Anteil vorwärts gespielter Pässe im offensiven Drittel",
+        "percent",
+    ),
+    "op_f3_backward_pass_proportion": (
+        "Rückpässe F3 %",
+        "Anteil rückwärts gespielter Pässe im offensiven Drittel",
+        "percent",
+    ),
+    "op_f3_sideways_pass_proportion": (
+        "Querpässe F3 %",
+        "Anteil seitlich gespielter Pässe im offensiven Drittel",
+        "percent",
+    ),
+    "pressured_passing_ratio": (
+        "Passquote unter Druck",
+        "Erfolgreiche Pässe bei gegnerischem Druck",
+        "percent",
+    ),
+    "passes_pressed_ratio": (
+        "Anteil Pässe unter Druck",
+        "Anteil der unter Druck gespielten Pässe",
+        "percent",
+    ),
+    "pass_into_pressure_ratio": (
+        "Pässe in Druckzonen",
+        "Anteil der Zuspiele in gegnerischen Druck",
+        "percent",
+    ),
+    "pass_into_danger_ratio": (
+        "Gefährliche Pass-Anteile",
+        "Anteil der Zuspiele in gefährliche Zonen",
+        "percent",
+    ),
+    "pass_length_ratio": (
+        "Passlängen-Verhältnis",
+        "Relativer Anteil längerer Pässe",
+        "percent",
+    ),
+    "pressured_pass_length_ratio": (
+        "Passlängen-Verhältnis (Druck)",
+        "Relativer Anteil längerer Pässe unter Druck",
+        "percent",
+    ),
+    "pressured_change_in_pass_length": (
+        "Δ Passlänge unter Druck",
+        "Veränderung der durchschnittlichen Passlänge bei Druck",
+        "float",
+    ),
+    "s_pass_length": (
+        "Ø Passlänge (erfolgreich)",
+        "Durchschnittliche Länge erfolgreicher Pässe",
+        "float",
+    ),
+    "p_pass_length": (
+        "Ø Passlänge (unter Druck)",
+        "Durchschnittliche Länge von Pässen unter Druck",
+        "float",
+    ),
+    "ps_pass_length": (
+        "Ø Passlänge (erfolgr.+Druck)",
+        "Durchschnittliche Länge erfolgreicher Pässe unter Druck",
+        "float",
+    ),
+    "average_x_pass": (
+        "Ø Pass-Position (x)",
+        "Durchschnittliche Feldposition der Pässe",
+        "float",
+    ),
+    "carry_ratio": (
+        "Carry-Anteil",
+        "Anteil der Ballaktionen als Carry",
+        "percent",
+    ),
+    "carry_length": (
+        "Ø Carry-Länge",
+        "Durchschnittliche Länge der Ballführungen",
+        "float",
+    ),
+    "left_foot_ratio": (
+        "Linker-Fuß-Anteil",
+        "Anteil der Aktionen mit dem linken Fuß",
+        "percent",
+    ),
+    "padj_tackles_90": (
+        "PA Tacklings / 90",
+        "Positionsadjustierte Tacklings pro 90 Minuten",
+        "float",
+    ),
+    "padj_tackles_and_interceptions_90": (
+        "PA Tackles+Interceptions / 90",
+        "Positionsadjustierte Tacklings + Interceptions pro 90 Minuten",
+        "float",
+    ),
+    "padj_clearances_90": (
+        "PA Klärungen / 90",
+        "Positionsadjustierte Klärungen pro 90 Minuten",
+        "float",
+    ),
+    "defensive_action_regains_90": (
+        "Defensive Ballgewinne / 90",
+        "Ballgewinne nach defensiven Aktionen pro 90 Minuten",
+        "float",
+    ),
+    "counterpressure_regains_90": (
+        "Gegenpressing-Gewinne / 90",
+        "Ballgewinne nach Gegenpressing pro 90 Minuten",
+        "float",
+    ),
+    "fhalf_pressures_90": (
+        "Pressures vorderes Drittel / 90",
+        "Pressures im vorderen Feldbereich pro 90 Minuten",
+        "float",
+    ),
+    "fhalf_counterpressures_90": (
+        "Gegenpressures vorderes Drittel / 90",
+        "Gegenpressures im vorderen Feldbereich pro 90 Minuten",
+        "float",
+    ),
+    "fhalf_pressures_ratio": (
+        "Pressures vorne Anteil",
+        "Anteil der Pressures im vorderen Drittel",
+        "percent",
+    ),
+    "average_x_defensive_action": (
+        "Ø Position Defensivaktion (x)",
+        "Durchschnittliche Feldposition defensiver Aktionen",
+        "float",
+    ),
+    "average_x_pressure": (
+        "Ø Position Pressure (x)",
+        "Durchschnittliche Feldposition der Pressures",
+        "float",
+    ),
+    "blocks_per_shot": (
+        "Blocks pro Schuss",
+        "Geblockte Abschlüsse je eigenem Abschluss",
+        "float",
+    ),
+    "npga_90": (
+        "NPGA / 90",
+        "Gegentore ohne Elfmeter pro 90 Minuten",
+        "float",
+    ),
+    "shots_faced_90": (
+        "Schüsse gegen / 90",
+        "Abschlüsse gegen den Torhüter pro 90 Minuten",
+        "float",
+    ),
+    "np_xg_faced_90": (
+        "NP xG gegen / 90",
+        "Non-Penalty Expected Goals gegen pro 90 Minuten",
+        "float",
+    ),
+    "np_psxg_faced_90": (
+        "NP PSxG gegen / 90",
+        "Post-Shot xG ohne Elfmeter gegen pro 90 Minuten",
+        "float",
+    ),
+    "ot_shots_faced_90": (
+        "Shots on Target gegen / 90",
+        "Schüsse aufs Tor gegen pro 90 Minuten",
+        "float",
+    ),
+    "ot_shots_faced_ratio": (
+        "Shots on Target Anteil",
+        "Anteil der Abschlüsse aufs Tor",
+        "percent",
+    ),
+    "np_optimal_gk_dlength": (
+        "Optimale Abschlaglänge",
+        "Empfohlene Länge für Abwürfe oder Abschläge laut Modell",
+        "float",
+    ),
+    "xs_ratio": (
+        "XS-Quote",
+        "Anteil der gestoppten Flanken (Cross Stops)",
+        "percent",
+    ),
+    "sp_assists_90": (
+        "Standard-Assists / 90",
+        "Assists nach Standards pro 90 Minuten",
+        "float",
+    ),
+    "sp_key_passes_90": (
+        "Standard-Key-Pässe / 90",
+        "Key Pässe nach Standards pro 90 Minuten",
+        "float",
+    ),
+    "yellow_cards_90": (
+        "Gelbe Karten / 90",
+        "Gelbe Karten pro 90 Minuten",
+        "float",
+    ),
+    "second_yellow_cards_90": (
+        "Gelb-Rote Karten / 90",
+        "Gelb-Rote Karten pro 90 Minuten",
+        "float",
+    ),
+    "red_cards_90": (
+        "Rote Karten / 90",
+        "Rote Karten pro 90 Minuten",
+        "float",
+    ),
+    "errors_90": (
+        "Fehler / 90",
+        "Individuelle Fehler pro 90 Minuten",
         "float",
     ),
 }
@@ -724,10 +954,7 @@ METRIC_NICHT: dict[str, tuple[str | None, str | None, str | None]] = {
 }
 
 
-# Reihenfolge der anzuzeigenden Spieler-Infos. Aus Gründen der Darstellung
-# benötigt das Template jeweils Feldname und Beschriftung, daher erzeugen wir
-# hier direkt ein (key, label)-Tuple aus den Spaltenmetadaten.
-_PLAYER_INFO_FIELD_KEYS = [
+PLAYER_INFO_FIELD_KEYS: list[str] = [
     "team_name",
     "appearances",
     "starting_appearances",
@@ -739,6 +966,15 @@ _PLAYER_INFO_FIELD_KEYS = [
 PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
     (field, COLUMN_LABELS.get(field, (field, None, ""))[0])
     for field in _PLAYER_INFO_FIELD_KEYS
+]
+
+
+def _player_info_field_label(key: str) -> str:
+    return COLUMN_LABELS.get(key, (key, None, "string"))[0]
+
+
+PLAYER_INFO_FIELDS: list[tuple[str, str]] = [
+    (key, _player_info_field_label(key)) for key in PLAYER_INFO_FIELD_KEYS
 ]
 
 
