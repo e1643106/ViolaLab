@@ -38,6 +38,8 @@ DEFAULT_SEASON_METRICS: list[str] = [
 ]
 DEFAULT_MATCH_METRICS: list[str] = ["np_xg", "goals", "assists", "xgchain"]
 
+PLAYER_INFO_KEYS: list[str] = [key for key, _label in PLAYER_INFO_FIELDS]
+
 
 def _metric_tuple(metric: str) -> tuple[str, str, str]:
     label, _legend, fmt = metric_definition(metric)
@@ -132,7 +134,11 @@ def dashboard(request):
         }
         for pos in available_positions
     ]
-    selected_player_meta = _selected_player_meta(players, selected_player_ids)
+    selected_player_meta = _selected_player_meta(
+        players,
+        selected_player_ids,
+        season_stats,
+    )
 
     context = {
         "competition_choices": competition_choices,
@@ -177,12 +183,14 @@ def _load_season_stats(
         return []
 
     metric_list = list(metrics)
+    info_metrics = [key for key in PLAYER_INFO_KEYS if key not in metric_list]
+    query_metrics = metric_list + info_metrics
     player_ids_list = list(player_ids)
     rows = fetch_season_rows(
         competition_id=int(competition_id),
         season_id=int(season_id),
         player_ids=player_ids_list,
-        metrics=metric_list,
+        metrics=query_metrics,
     )
 
     positions = fetch_player_positions(
@@ -191,7 +199,7 @@ def _load_season_stats(
         player_ids_list,
     )
     for row in rows:
-        row.metrics = {metric: row.metrics.get(metric) for metric in metric_list}
+        row.metrics = {metric: row.metrics.get(metric) for metric in query_metrics}
         lookup = positions.get(row.player_id)
         if lookup:
             row.primary_position = lookup.get("primary_position") or row.primary_position
@@ -379,24 +387,52 @@ def _player_matches_position(player: dict[str, object], position: str) -> bool:
     return position_upper in {primary, secondary}
 
 
-def _selected_player_meta(players: list[dict[str, object]], selected_ids: Sequence[str]):
-    lookup = {str(player.get("player_id")): player for player in players}
-    meta = []
+def _selected_player_meta(
+    players: list[dict[str, object]],
+    selected_ids: Sequence[str],
+    season_rows: Sequence[SeasonRow],
+):
+    season_lookup = {str(row.player_id): row for row in season_rows}
+    fallback_lookup = {str(player.get("player_id")): player for player in players}
+    meta: list[dict[str, object | None]] = []
     for player_id in selected_ids:
-        player = lookup.get(player_id)
-        if not player:
+        season_row = season_lookup.get(player_id)
+        fallback = fallback_lookup.get(player_id, {})
+        if not season_row and not fallback:
             continue
-        primary = _format_position(player.get("primary_position"))
-        secondary = _format_position(player.get("secondary_position"))
-        meta.append(
-            {
-                "player_name": player.get("player_name"),
-                "team_name": player.get("team_name"),
-                "primary_position": primary,
-                "secondary_position": secondary,
-            }
+        player_name = (
+            season_row.player_name
+            if season_row
+            else fallback.get("player_name")
         )
+        primary = _format_position(
+            _player_info_value(season_row, fallback, "primary_position")
+        )
+        secondary = _format_position(
+            _player_info_value(season_row, fallback, "secondary_position")
+        )
+        info: dict[str, object | None] = {
+            "player_name": player_name,
+            "primary_position": primary,
+            "secondary_position": secondary,
+        }
+        for key in PLAYER_INFO_KEYS:
+            info[key] = _player_info_value(season_row, fallback, key)
+        meta.append(info)
     return meta
+
+
+def _player_info_value(
+    season_row: SeasonRow | None,
+    fallback: dict[str, object],
+    key: str,
+):
+    if season_row:
+        if hasattr(season_row, key):
+            return getattr(season_row, key)
+        if key in season_row.metrics:
+            return season_row.metrics.get(key)
+    return fallback.get(key)
 
 
 def _format_position(code: object | None) -> str | None:
