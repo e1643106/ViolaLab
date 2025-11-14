@@ -17,7 +17,11 @@ from .data_access import (
     fetch_positions,
     fetch_season_rows,
 )
+<<<<<<< ours
 from .dashboard_labels import (
+=======
+from .labels import (
+>>>>>>> theirs
     CATEGORY_GROUPS,
     CATEGORY_LABELS,
     COLUMN_LABELS,
